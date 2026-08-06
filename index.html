@@ -57,6 +57,7 @@
     .list .dots { flex:1; border-bottom:2px dotted #c9c2b4; transform:translateY(-4px); }
     .link { display:inline-block; margin-top:10px; color:var(--green); font-weight:700; font-size:14px; text-decoration:none; }
     .link:hover { text-decoration:underline; }
+    .hint { color:#777; font-size:13px; margin-top:10px; }
 
     .table-wrap { overflow-x:auto; }
     .table { width:100%; border-collapse:collapse; font-size:15px; }
@@ -102,7 +103,7 @@
         <a href="#" class="nav-link" data-view="sales" data-label="Sales">Sales</a>
         <a href="#" class="nav-link" data-view="customers" data-label="Customers">Customers</a>
         <a href="#" class="nav-link" data-view="installments" data-label="Installments">Installments</a>
-        <a href="#" class="nav-link" data-view="Pautang" data-label="Pautang / Balance">Pautang / Balance</a>
+        <a href="#" class="nav-link" data-view="utang" data-label="Utang / Balance">Utang / Balance</a>
         <a href="#" class="nav-link" data-view="suppliers" data-label="Suppliers">Suppliers</a>
         <a href="#" class="nav-link" data-view="delivery" data-label="Delivery">Delivery</a>
         <a href="#" class="nav-link" data-view="reports" data-label="Reports">Reports</a>
@@ -149,21 +150,14 @@
 
           <div class="grid-2">
             <div class="card">
-              <h3 class="card-title">Stock Summary</h3>
+              <h3 class="card-title">Stock Summary <small>(available)</small></h3>
               <ul class="list" id="stockSummaryList"></ul>
               <a href="#" class="link" data-goto="stock">View All</a>
             </div>
 
             <div class="card">
               <h3 class="card-title">Best Selling <small>(This Month)</small></h3>
-              <ul class="list">
-                <li><span>Alas</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Princess Bea</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Young Chow</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Salo-Salo</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Planters</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Japonica</span><i class="dots"></i><strong>0</strong></li>
-              </ul>
+              <ul class="list" id="bestSellingList"></ul>
               <a href="#" class="link" data-goto="reports">View Report</a>
             </div>
           </div>
@@ -188,9 +182,7 @@
                 <thead>
                   <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Kilo</th><th>Amount</th></tr>
                 </thead>
-                <tbody id="recentSalesBody">
-                  <tr><td colspan="6" class="empty">No sales recorded yet.</td></tr>
-                </tbody>
+                <tbody id="recentSalesBody"></tbody>
               </table>
             </div>
           </div>
@@ -208,12 +200,8 @@
             <div class="form-grid">
               <label>Name of Rice
                 <select name="item">
-                  <option>Alas</option>
-                  <option>Princess Bea</option>
-                  <option>Young Chow</option>
-                  <option>Salo-Salo</option>
-                  <option>Planters</option>
-                  <option>Japonica</option>
+                  <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
+                  <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
                 </select>
               </label>
               <label>Kilos of Sack
@@ -247,6 +235,52 @@
           </div>
         </section>
 
+        <!-- SALES -->
+        <section class="view" id="view-sales">
+          <div class="view-head">
+            <h2 class="page-title">Sales</h2>
+            <button class="btn" id="toggleSaleForm">+ Add Sale</button>
+          </div>
+
+          <form class="card form" id="saleForm" hidden>
+            <h3 class="card-title">New Sale</h3>
+            <div class="form-grid">
+              <label>Customer<input name="customer" required placeholder="Customer name" /></label>
+              <label>Item
+                <select name="item">
+                  <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
+                  <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
+                </select>
+              </label>
+              <label>Quantity (Sack)
+                <input name="sacks" type="number" min="0.5" step="0.5" required placeholder="e.g. 1" />
+              </label>
+              <label>Selling Price (Sack) ₱
+                <input name="price" type="number" min="0" step="any" required placeholder="e.g. 2800" />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn">Save Sale</button>
+              <button type="button" class="btn ghost" id="cancelSaleForm">Cancel</button>
+            </div>
+            <p class="hint">Kilos per sack and cost are taken automatically from the latest stock entry of the item. Profit = (selling price − cost) × quantity. Stock is deducted automatically.</p>
+          </form>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th>
+                    <th>Sacks</th><th>Kilo</th><th>Amount</th><th>Profit</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="salesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- INSTALLMENTS -->
         <section class="view" id="view-installments">
           <div class="view-head">
@@ -260,12 +294,8 @@
               <label>Customer<input name="customer" required placeholder="Customer name" /></label>
               <label>Item
                 <select name="item">
-                  <option>Alas</option>
-                  <option>Princess Bea</option>
-                  <option>Young Chow</option>
-                  <option>Salo-Salo</option>
-                  <option>Planters</option>
-                  <option>Japonica</option>
+                  <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
+                  <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
                 </select>
               </label>
               <label>Due Date<input name="due" type="date" required /></label>
