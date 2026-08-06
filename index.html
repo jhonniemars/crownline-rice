@@ -290,7 +290,7 @@
           </div>
         </section>
 
-        <!-- CUSTOMERS (auto-built from Sales + Installments) -->
+        <!-- CUSTOMERS -->
         <section class="view" id="view-customers">
           <div class="view-head">
             <h2 class="page-title">Customers</h2>
@@ -341,6 +341,12 @@
                   <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
                   <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
                 </select>
+              </label>
+              <label>Kilos of Sack
+                <input name="kilo" type="number" min="1" step="any" placeholder="e.g. 50" />
+              </label>
+              <label>Quantity of Sack
+                <input name="sacks" type="number" min="0.5" step="0.5" placeholder="e.g. 2" />
               </label>
               <label>Amount of Item (₱)<input name="total" type="number" min="0" step="any" required placeholder="e.g. 2500" /></label>
               <label>Date of Purchase / Deliver<input name="pdate" type="date" required /></label>
@@ -403,6 +409,7 @@
     const setText = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); return el; };
+    const itemLabel = r => r.item + ((r.sacks || 0) > 0 ? ' (' + r.sacks + ' × ' + (r.kilo || 0) + 'kg)' : '');
 
     // ---------- Stock math ----------
     const latestEntry = item => stockEntries.find(e => e.item === item);
@@ -443,8 +450,8 @@
     }
     function historyRows(filterName){
       const rows = [];
-      sales.forEach(s => rows.push({ customer:s.customer, item:s.item, date:s.date, amount:s.amount, basis:'Cash', status:'On-Time' }));
-      installments.forEach(i => rows.push({ customer:i.customer, item:i.item, date:i.pdate || i.due || todayISO(), amount:i.total, basis:(i.basis === 'cash' ? 'Cash' : 'Credit'), status:payStatus(i) }));
+      sales.forEach(s => rows.push({ customer:s.customer, item:itemLabel(s), date:s.date, amount:s.amount, basis:'Cash', status:'On-Time' }));
+      installments.forEach(i => rows.push({ customer:i.customer, item:itemLabel(i), date:i.pdate || i.due || todayISO(), amount:i.total, basis:(i.basis === 'cash' ? 'Cash' : 'Credit'), status:payStatus(i) }));
       const out = filterName ? rows.filter(r => r.customer === filterName) : rows;
       return out.sort((a, b) => b.date.localeCompare(a.date));
     }
@@ -495,7 +502,7 @@
       const recent = document.getElementById('recentSalesBody');
       if (recent) recent.innerHTML = sales.length
         ? sales.slice(0, 5).map(s =>
-            '<tr><td>' + fmtDate(s.date) + '</td><td>' + s.invoice + '</td><td>' + s.customer + '</td><td>' + s.item + '</td><td>' + s.kilo.toLocaleString() + '</td><td>' + peso(s.amount) + '</td></tr>').join('')
+            '<tr><td>' + fmtDate(s.date) + '</td><td>' + s.invoice + '</td><td>' + s.customer + '</td><td>' + itemLabel(s) + '</td><td>' + s.kilo.toLocaleString() + '</td><td>' + peso(s.amount) + '</td></tr>').join('')
         : '<tr><td colspan="6" class="empty">No sales recorded yet.</td></tr>';
     }
 
@@ -515,7 +522,7 @@
       if (!body) return;
       body.innerHTML = sales.length
         ? sales.map((s, idx) =>
-            '<tr><td>' + fmtDate(s.date) + '</td><td>' + s.invoice + '</td><td>' + s.customer + '</td><td>' + s.item + '</td><td>' + s.sacks + '</td><td>' + s.kilo.toLocaleString() + '</td><td>' + peso(s.amount) + '</td><td>' + peso(s.profit) + '</td><td><button class="btn small danger" data-del-sale="' + idx + '">Delete</button></td></tr>').join('')
+            '<tr><td>' + fmtDate(s.date) + '</td><td>' + s.invoice + '</td><td>' + s.customer + '</td><td>' + itemLabel(s) + '</td><td>' + s.sacks + '</td><td>' + s.kilo.toLocaleString() + '</td><td>' + peso(s.amount) + '</td><td>' + peso(s.profit) + '</td><td><button class="btn small danger" data-del-sale="' + idx + '">Delete</button></td></tr>').join('')
         : '<tr><td colspan="9" class="empty">No sales recorded yet. Click "+ Add Sale".</td></tr>';
     }
 
@@ -533,7 +540,7 @@
       const basisCell = (i.basis === 'cash') ? '<span class="tag cash">Cash</span>' : '<span class="tag credit">Credit</span>';
       const pays = (i.payments || []).length;
       const rowClass = st === 'paid' ? ' class="row-paid"' : '';
-      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + i.item + '</td><td>' + peso(i.total) + '</td><td>' + basisCell + '</td><td>' + fmtDate(i.pdate) + '</td><td>' + fmtDate(i.due) + '</td><td>' + peso(i.balance) + '</td><td>' + pays + '</td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button> <button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>';
+      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + itemLabel(i) + '</td><td>' + peso(i.total) + '</td><td>' + basisCell + '</td><td>' + fmtDate(i.pdate) + '</td><td>' + fmtDate(i.due) + '</td><td>' + peso(i.balance) + '</td><td>' + pays + '</td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button> <button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>';
     }
     function renderInstallments(){
       const html = installments.length ? installments.map(instRow).join('')
@@ -664,8 +671,10 @@
       if (currentBasis === 'credit' && !due) { alert('Please set the Due Date for credit purchases.'); return; }
       const pdate = f.get('pdate') || todayISO();
       installments.unshift({
-        customer: f.get('customer').trim(), item: f.get('item'), total,
-        pdate, due: due || '', basis: currentBasis,
+        customer: f.get('customer').trim(), item: f.get('item'),
+        kilo: Math.max(0, Number(f.get('kilo')) || 0),
+        sacks: Math.max(0, Number(f.get('sacks')) || 0),
+        total, pdate, due: due || '', basis: currentBasis,
         balance: currentBasis === 'cash' ? 0 : total,
         payments: currentBasis === 'cash' ? [{ date: pdate, amount: total }] : []
       });
