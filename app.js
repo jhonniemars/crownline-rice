@@ -39,10 +39,10 @@ function renderStock(){
   const body = document.getElementById('stockTableBody');
   if (!body) return;
   body.innerHTML = stockEntries.length
-    ? stockEntries.map(e =>
-        `<tr><td>${e.item}</td><td>${e.kilo} kg</td><td>${e.sacks}</td><td>${(e.sacks * e.kilo).toLocaleString()}</td><td>${peso(e.price)}</td><td><strong>${peso(e.sacks * e.price)}</strong></td></tr>`
+    ? stockEntries.map((e, idx) =>
+        `<tr><td>${e.item}</td><td>${e.kilo} kg</td><td>${e.sacks}</td><td>${(e.sacks * e.kilo).toLocaleString()}</td><td>${peso(e.price)}</td><td><strong>${peso(e.sacks * e.price)}</strong></td><td><button class="btn small danger" data-del-stock="${idx}">Delete</button></td></tr>`
       ).join('')
-    : '<tr><td colspan="6" class="empty">No stock encoded yet. Click "+ Add Stock Entry".</td></tr>';
+    : '<tr><td colspan="7" class="empty">No stock encoded yet. Click "+ Add Stock Entry".</td></tr>';
 }
 
 // ---------- Installments ----------
@@ -51,10 +51,10 @@ function statusCell(s){
   if (s === 'pending') return '<span class="seal pending"></span>Pending';
   return '<span class="seal paid"></span>Paid';
 }
-const instRow = i => `<tr><td>${i.customer}</td><td>${i.item}</td><td>${peso(i.total)}</td><td>${peso(i.balance)}</td><td>${fmtDate(i.due)}</td><td>${statusCell(i.status)}</td></tr>`;
+const instRow = (i, idx) => `<tr><td>${i.customer}</td><td>${i.item}</td><td>${peso(i.total)}</td><td>${peso(i.balance)}</td><td>${fmtDate(i.due)}</td><td>${statusCell(i.status)}</td><td><button class="btn small danger" data-del-inst="${idx}">Delete</button></td></tr>`;
 function renderInstallments(){
   const html = installments.length ? installments.map(instRow).join('')
-    : '<tr><td colspan="6" class="empty">No installments recorded yet.</td></tr>';
+    : '<tr><td colspan="7" class="empty">No installments recorded yet.</td></tr>';
   const a = document.getElementById('dashInstallments');
   const b = document.getElementById('allInstallments');
   if (a) a.innerHTML = html;
@@ -62,6 +62,25 @@ function renderInstallments(){
 }
 
 function renderAll(){ renderDashboard(); renderStock(); renderInstallments(); }
+
+// ---------- Delete buttons (works on every table) ----------
+document.addEventListener('click', e => {
+  const ds = e.target.closest('[data-del-stock]');
+  if (ds) {
+    if (confirm('Delete this stock entry?')) {
+      stockEntries.splice(Number(ds.dataset.delStock), 1);
+      save(); renderAll();
+    }
+    return;
+  }
+  const di = e.target.closest('[data-del-inst]');
+  if (di) {
+    if (confirm('Delete this installment?')) {
+      installments.splice(Number(di.dataset.delInst), 1);
+      save(); renderAll();
+    }
+  }
+});
 
 // ---------- View switching ----------
 function showView(name, label){
