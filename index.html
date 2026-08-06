@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grace Harvest Rice Trading | Business Tracker</title>
+  <title>Crownline Rice Supply | Business Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>" />
   <style>
     :root {
@@ -17,9 +17,6 @@
     .app { display:flex; min-height:100vh; }
 
     .sidebar { width:250px; flex:none; background:var(--sidebar-bg); color:var(--sidebar-text); padding:28px 18px; position:sticky; top:0; height:100vh; }
-    .brand { text-align:center; margin-bottom:34px; }
-    .brand h1 { font-size:26px; letter-spacing:1px; line-height:1.15; text-transform:uppercase; }
-    .brand span { color:#cbb9a6; font-size:15px; }
     .nav { display:flex; flex-direction:column; gap:6px; }
     .nav-link { display:block; padding:10px 18px; border-radius:8px; color:var(--sidebar-text); text-decoration:none; font-size:16px; font-weight:500; }
     .nav-link:hover { background:rgba(255,255,255,.08); }
@@ -27,9 +24,8 @@
 
     .main { flex:1; min-width:0; display:flex; flex-direction:column; }
     .topbar { background:var(--topbar); border-bottom:1px solid var(--border); padding:12px 28px; display:flex; justify-content:flex-end; align-items:center; }
-    .admin { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:15px; }
+    .admin { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; }
     .avatar { width:26px; height:26px; border-radius:50%; background:#8a8177; }
-    .caret { font-size:12px; color:#555; }
 
     .content { padding:26px 32px; }
     .view { display:none; flex-direction:column; gap:22px; }
@@ -106,10 +102,6 @@
   <div class="app">
 
     <aside class="sidebar">
-      <div class="brand">
-        <h1>Grace Harvest</h1>
-        <span>Rice Trading</span>
-      </div>
       <nav class="nav">
         <a href="#" class="nav-link active" data-view="dashboard" data-label="Dashboard">Dashboard</a>
         <a href="#" class="nav-link" data-view="stock" data-label="Stock / Inventory">Stock / Inventory</a>
@@ -126,7 +118,7 @@
 
     <main class="main">
       <header class="topbar">
-        <div class="admin"><span class="avatar"></span> Admin <span class="caret">▾</span></div>
+        <div class="admin"><span class="avatar"></span> Crownline Rice Supply</div>
       </header>
 
       <div class="content">
@@ -435,12 +427,20 @@
     function totalPurchase(){
       return stockEntries.reduce((s, e) => s + e.sacks * e.price, 0);
     }
-    // Grand Total Profit: cash sales count immediately; credit profit counts only the PAID portion
-    // (0 payments = 0 profit counted; 1st payment adds the paid share; Fully Paid = full profit)
+    // Profit of an installment: stored profit if present; otherwise estimated live
+    // (Amount − sacks × latest stock price) so OLD entries also work.
+    function instProfit(i){
+      if (typeof i.profit === 'number') return i.profit;
+      const ent = latestEntry(i.item);
+      if ((i.sacks || 0) > 0 && ent) return i.total - i.sacks * ent.price;
+      return 0;
+    }
+    // Grand Total Profit: cash counts immediately; credit counts ONLY the paid portion
+    // (no payment = 0; 1st payment adds the paid share; Fully Paid = full profit)
     function grandProfit(){
       let p = sales.reduce((s, x) => s + (x.profit || 0), 0);
       installments.forEach(i => {
-        const pr = i.profit || 0;
+        const pr = instProfit(i);
         if (pr && i.total > 0) {
           const paid = Math.min(i.total, Math.max(0, i.total - i.balance));
           p += Math.round(pr * (paid / i.total) * 100) / 100;
