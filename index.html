@@ -369,7 +369,7 @@
               <button type="submit" class="btn">Save Installment</button>
               <button type="button" class="btn ghost" id="cancelForm">Cancel</button>
             </div>
-            <p class="hint">Cash = marked Fully Paid automatically. Credit = balance starts at the full amount; record the 1st, 2nd… payments with the Payment button. Delivered sacks (Quantity of Sack) are deducted from stock even if not yet fully paid.</p>
+            <p class="hint">Cash = marked Fully Paid automatically. Credit = balance starts at the full amount; record the 1st, 2nd… payments with the Payment button. Delivered sacks are deducted from stock even if not yet fully paid. Credit profit joins the Grand Total Profit gradually as payments are received (full amount when Fully Paid).</p>
           </form>
 
           <div class="card">
@@ -435,10 +435,18 @@
     function totalPurchase(){
       return stockEntries.reduce((s, e) => s + e.sacks * e.price, 0);
     }
+    // Grand Total Profit: cash sales count immediately; credit profit counts only the PAID portion
+    // (0 payments = 0 profit counted; 1st payment adds the paid share; Fully Paid = full profit)
     function grandProfit(){
       let p = sales.reduce((s, x) => s + (x.profit || 0), 0);
-      p += installments.reduce((s, i) => s + (i.profit || 0), 0);
-      return p;
+      installments.forEach(i => {
+        const pr = i.profit || 0;
+        if (pr && i.total > 0) {
+          const paid = Math.min(i.total, Math.max(0, i.total - i.balance));
+          p += Math.round(pr * (paid / i.total) * 100) / 100;
+        }
+      });
+      return Math.round(p);
     }
     function nextInvoice(){
       let max = 0;
@@ -663,7 +671,7 @@
       e.target.reset(); e.target.hidden = true;
     });
 
-    // ---------- Installment form (Cash / Credit; delivered sacks deduct stock) ----------
+    // ---------- Installment form ----------
     let currentBasis = 'credit';
     document.querySelectorAll('.basis-btn').forEach(b => {
       b.addEventListener('click', () => {
