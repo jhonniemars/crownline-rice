@@ -67,6 +67,7 @@
     .row-paid td { background:#e8f5e9; }
     .status { font-weight:700; }
     .status.on-time { color:var(--green); }
+    .status.delayed { color:#b3402f; }
     .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
     .seal.paid { background:var(--green); }
     .seal.overdue { background:#b3402f; }
@@ -289,6 +290,41 @@
           </div>
         </section>
 
+        <!-- CUSTOMERS (auto-built from Sales + Installments) -->
+        <section class="view" id="view-customers">
+          <div class="view-head">
+            <h2 class="page-title">Customers</h2>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Customer List</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Customer</th><th>Purchases</th><th>Total Bought</th><th>Balance (Utang)</th><th>Action</th></tr>
+                </thead>
+                <tbody id="customerListBody"></tbody>
+              </table>
+            </div>
+            <p class="hint">Customers are saved automatically when you record a Sale or an Installment.</p>
+          </div>
+
+          <div class="card">
+            <div class="view-head">
+              <h3 class="card-title" id="historyTitle">Payment History (All Customers)</h3>
+              <button class="btn small ghost" id="showAllHistory">Show All</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Customer</th><th>Item Purchased</th><th>Date Purchased</th><th>Amount</th><th>Basis</th><th>Status of Payment</th></tr>
+                </thead>
+                <tbody id="customerHistoryBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- INSTALLMENTS -->
         <section class="view" id="view-installments">
           <div class="view-head">
@@ -386,6 +422,51 @@
       return 'INV-' + String(max + 1).padStart(4, '0');
     }
 
+    // ---------- Customers (auto-derived) ----------
+    function customerList(){
+      const m = {};
+      const add = name => {
+        const k = (name || '').trim(); if (!k) return null;
+        if (!m[k]) m[k] = { name:k, purchases:0, bought:0, balance:0 };
+        return m[k];
+      };
+      sales.forEach(s => { const c = add(s.customer); if (c) { c.purchases++; c.bought += s.amount; } });
+      installments.forEach(i => { const c = add(i.customer); if (c) { c.purchases++; c.bought += i.total; c.balance += i.balance; } });
+      return Object.values(m).sort((a, b) => a.name.localeCompare(b.name));
+    }
+    function payStatus(i){
+      if (i.balance <= 0) {
+        const last = (i.payments && i.payments.length) ? i.payments.map(p => p.date).sort().pop() : (i.pdate || '');
+        return (!i.due || last <= i.due) ? 'On-Time' : 'Delayed';
+      }
+      return (i.due && i.due < todayISO()) ? 'Delayed' : 'On-Time';
+    }
+    function historyRows(filterName){
+      const rows = [];
+      sales.forEach(s => rows.push({ customer:s.customer, item:s.item, date:s.date, amount:s.amount, basis:'Cash', status:'On-Time' }));
+      installments.forEach(i => rows.push({ customer:i.customer, item:i.item, date:i.pdate || i.due || todayISO(), amount:i.total, basis:(i.basis === 'cash' ? 'Cash' : 'Credit'), status:payStatus(i) }));
+      const out = filterName ? rows.filter(r => r.customer === filterName) : rows;
+      return out.sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    let selectedCustomer = null;
+    function renderCustomers(){
+      const list = customerList();
+      const lb = document.getElementById('customerListBody');
+      if (lb) lb.innerHTML = list.length
+        ? list.map((c, idx) =>
+            '<tr><td>' + c.name + '</td><td>' + c.purchases + '</td><td>' + peso(c.bought) + '</td><td>' + peso(c.balance) + '</td><td><button class="btn small" data-view-cust="' + idx + '">View History</button></td></tr>').join('')
+        : '<tr><td colspan="5" class="empty">No customers yet. They appear automatically after a Sale or Installment.</td></tr>';
+
+      setText('historyTitle', selectedCustomer ? 'Payment History — ' + selectedCustomer : 'Payment History (All Customers)');
+      const hb = document.getElementById('customerHistoryBody');
+      const rows = historyRows(selectedCustomer);
+      if (hb) hb.innerHTML = rows.length
+        ? rows.map(r =>
+            '<tr><td>' + r.customer + '</td><td>' + r.item + '</td><td>' + fmtDate(r.date) + '</td><td>' + peso(r.amount) + '</td><td><span class="tag ' + r.basis.toLowerCase() + '">' + r.basis + '</span></td><td><span class="status ' + (r.status === 'On-Time' ? 'on-time">On-Time' : 'delayed">Delayed') + '</span></td></tr>').join('')
+        : '<tr><td colspan="6" class="empty">No history yet.</td></tr>';
+    }
+
     // ---------- Dashboard ----------
     function renderDashboard(){
       let totSacks = 0, totKilos = 0;
@@ -463,10 +544,13 @@
       if (b) b.innerHTML = html;
     }
 
-    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); }
+    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); renderCustomers(); }
 
     // ---------- Row action buttons ----------
     document.addEventListener('click', e => {
+      const vc = e.target.closest('[data-view-cust]');
+      if (vc) { selectedCustomer = customerList()[Number(vc.dataset.viewCust)].name; renderCustomers(); return; }
+
       const py = e.target.closest('[data-pay-inst]');
       if (py) {
         const i = installments[Number(py.dataset.payInst)];
@@ -494,10 +578,12 @@
       if (di) { if (confirm('Delete this installment?')) { installments.splice(Number(di.dataset.delInst), 1); save(); renderAll(); } }
     });
 
+    on('showAllHistory', 'click', () => { selectedCustomer = null; renderCustomers(); });
+
     // ---------- View switching ----------
     function showView(name, label){
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', installments:'view-installments' };
+      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', customers:'view-customers', installments:'view-installments' };
       if (map[name]) document.getElementById(map[name]).classList.add('active');
       else { setText('placeholderTitle', label || 'Module'); document.getElementById('view-placeholder').classList.add('active'); }
     }
@@ -545,7 +631,7 @@
       if (!ent) { alert('No stock entry for "' + item + '" yet. Add stock first.'); return; }
       if (sacks > availableSacks(item)) { alert('Not enough stock for "' + item + '". Available: ' + availableSacks(item) + ' sack(s).'); return; }
       sales.unshift({
-        date: todayISO(), invoice: nextInvoice(), customer: f.get('customer'),
+        date: todayISO(), invoice: nextInvoice(), customer: f.get('customer').trim(),
         item, sacks, kilo: sacks * ent.kilo, price,
         amount: sacks * price, profit: (price - ent.price) * sacks
       });
@@ -578,7 +664,7 @@
       if (currentBasis === 'credit' && !due) { alert('Please set the Due Date for credit purchases.'); return; }
       const pdate = f.get('pdate') || todayISO();
       installments.unshift({
-        customer: f.get('customer'), item: f.get('item'), total,
+        customer: f.get('customer').trim(), item: f.get('item'), total,
         pdate, due: due || '', basis: currentBasis,
         balance: currentBasis === 'cash' ? 0 : total,
         payments: currentBasis === 'cash' ? [{ date: pdate, amount: total }] : []
