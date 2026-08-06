@@ -72,6 +72,9 @@
     .btn { background:var(--green); color:#fff; border:none; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
     .btn:hover { background:#256428; }
     .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .btn.danger { background:#b3402f; }
+    .btn.danger:hover { background:#8f3225; }
+    .btn.small { padding:6px 10px; font-size:13px; border-radius:6px; }
     .form-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
     .form-grid label { display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:14px; }
     .form-grid input, .form-grid select { font:inherit; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
@@ -170,7 +173,7 @@
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="dashInstallments"></tbody>
               </table>
@@ -235,7 +238,7 @@
                 <thead>
                   <tr>
                     <th>Name of Rice</th><th>Kilos of Sack</th><th>Quantity (Sack)</th>
-                    <th>Total Kilo</th><th>Price (Sack)</th><th>Grand Total</th>
+                    <th>Total Kilo</th><th>Price (Sack)</th><th>Grand Total</th><th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="stockTableBody"></tbody>
@@ -279,7 +282,7 @@
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="allInstallments"></tbody>
               </table>
