@@ -1,9 +1,5 @@
-// ---------- Data ----------
-let installments = [
-  { customer:'Juan Dela Cruz', item:'Premium Rice 50kg',   total:2500, balance:1000, due:'2025-05-28', status:'on-time' },
-  { customer:'Maria Santos',   item:'Well Milled Rice 50kg', total:1200, balance:600,  due:'2025-05-30', status:'pending' },
-  { customer:'Pedro Reyes',    item:'Dinorado 25kg',        total:900,  balance:0,    due:'2025-05-21', status:'paid' },
-];
+// ---------- Data: starts completely empty ----------
+let installments = [];
 
 const peso = n => '₱' + Number(n).toLocaleString('en-PH');
 const fmtDate = iso => new Date(iso + 'T00:00:00')
@@ -16,8 +12,10 @@ function statusCell(s){
 }
 const rowHTML = i => `<tr><td>${i.customer}</td><td>${i.item}</td><td>${peso(i.total)}</td><td>${peso(i.balance)}</td><td>${fmtDate(i.due)}</td><td>${statusCell(i.status)}</td></tr>`;
 
+const EMPTY_ROW = '<tr><td colspan="6" class="empty">No installments recorded yet.</td></tr>';
+
 function renderInstallments(){
-  const html = installments.map(rowHTML).join('');
+  const html = installments.length ? installments.map(rowHTML).join('') : EMPTY_ROW;
   const dash = document.getElementById('dashInstallments');
   const all  = document.getElementById('allInstallments');
   if (dash) dash.innerHTML = html;
