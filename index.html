@@ -64,11 +64,13 @@
     .table th { text-align:left; font-weight:700; padding:8px 10px; }
     .table td { padding:8px 10px; font-weight:500; }
     .empty { text-align:center; color:#9a917f; padding:14px 10px !important; font-style:italic; }
+    .row-paid td { background:#e8f5e9; }
     .status { font-weight:700; }
     .status.on-time { color:var(--green); }
     .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
     .seal.pending { background:#7a5a48; }
     .seal.paid { background:var(--green); }
+    .seal.overdue { background:#b3402f; }
 
     .btn { background:var(--green); color:#fff; border:none; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
     .btn:hover { background:#256428; }
@@ -167,7 +169,7 @@
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Payments</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="dashInstallments"></tbody>
               </table>
@@ -312,7 +314,7 @@
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Payments</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="allInstallments"></tbody>
               </table>
@@ -424,16 +426,23 @@
     }
 
     // ---------- Installments ----------
-    function statusCell(s){
-      if (s === 'on-time') return '<span class="status on-time">On Time</span>';
-      if (s === 'pending') return '<span class="seal pending"></span>Pending';
-      return '<span class="seal paid"></span>Paid';
+    function instStatus(i){
+      if (i.balance <= 0) return 'paid';
+      if (i.due < todayISO()) return 'overdue';
+      return 'ontime';
+    }
+    function instRow(i, idx){
+      const st = instStatus(i);
+      const stCell = st === 'paid' ? '<span class="seal paid"></span>Fully Paid'
+        : st === 'overdue' ? '<span class="seal overdue"></span>Overdue'
+        : '<span class="status on-time">On Time</span>';
+      const pays = (i.payments || []).length;
+      const rowClass = st === 'paid' ? ' class="row-paid"' : '';
+      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + i.item + '</td><td>' + peso(i.total) + '</td><td>' + peso(i.balance) + '</td><td>' + pays + '</td><td>' + fmtDate(i.due) + '</td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button> <button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>';
     }
     function renderInstallments(){
-      const html = installments.length
-        ? installments.map((i, idx) =>
-            '<tr><td>' + i.customer + '</td><td>' + i.item + '</td><td>' + peso(i.total) + '</td><td>' + peso(i.balance) + '</td><td>' + fmtDate(i.due) + '</td><td>' + statusCell(i.status) + '</td><td><button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>').join('')
-        : '<tr><td colspan="7" class="empty">No installments recorded yet.</td></tr>';
+      const html = installments.length ? installments.map(instRow).join('')
+        : '<tr><td colspan="8" class="empty">No installments recorded yet.</td></tr>';
       const a = document.getElementById('dashInstallments');
       const b = document.getElementById('allInstallments');
       if (a) a.innerHTML = html;
@@ -442,8 +451,27 @@
 
     function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); }
 
-    // ---------- Delete buttons ----------
+    // ---------- Row action buttons ----------
     document.addEventListener('click', e => {
+      const py = e.target.closest('[data-pay-inst]');
+      if (py) {
+        const i = installments[Number(py.dataset.payInst)];
+        if (i) {
+          const input = prompt('Payment received from ' + i.customer + ' (Balance: ' + peso(i.balance) + '). Enter amount ₱:');
+          if (input !== null && input.trim() !== '') {
+            let amt = Number(input);
+            if (isNaN(amt) || amt <= 0) alert('Invalid amount.');
+            else {
+              if (amt > i.balance) { alert('Amount is more than the balance. Only ' + peso(i.balance) + ' will be applied.'); amt = i.balance; }
+              i.payments = i.payments || [];
+              i.payments.push({ date: todayISO(), amount: amt });
+              i.balance = Math.round((i.balance - amt) * 100) / 100;
+              save(); renderAll();
+            }
+          }
+        }
+        return;
+      }
       const ds = e.target.closest('[data-del-stock]');
       if (ds) { if (confirm('Delete this stock entry?')) { stockEntries.splice(Number(ds.dataset.delStock), 1); save(); renderAll(); } return; }
       const dl = e.target.closest('[data-del-sale]');
@@ -517,11 +545,10 @@
     on('installmentForm', 'submit', e => {
       e.preventDefault();
       const f = new FormData(e.target);
-      const balance = Number(f.get('balance'));
       installments.unshift({
         customer: f.get('customer'), item: f.get('item'),
-        total: Number(f.get('total')), balance, due: f.get('due'),
-        status: balance <= 0 ? 'paid' : 'pending'
+        total: Number(f.get('total')), balance: Number(f.get('balance')),
+        due: f.get('due'), payments: []
       });
       save(); renderAll();
       e.target.reset(); e.target.hidden = true;
