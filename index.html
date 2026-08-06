@@ -16,7 +16,6 @@
     body { font-family:'Roboto Condensed',Arial,sans-serif; background:var(--bg); color:var(--text); }
     .app { display:flex; min-height:100vh; }
 
-    /* Sidebar */
     .sidebar { width:250px; flex:none; background:var(--sidebar-bg); color:var(--sidebar-text); padding:28px 18px; position:sticky; top:0; height:100vh; }
     .brand { text-align:center; margin-bottom:34px; }
     .brand h1 { font-size:26px; letter-spacing:1px; line-height:1.15; text-transform:uppercase; }
@@ -26,21 +25,18 @@
     .nav-link:hover { background:rgba(255,255,255,.08); }
     .nav-link.active { background:var(--green); color:#fff; border-radius:999px; }
 
-    /* Topbar */
     .main { flex:1; min-width:0; display:flex; flex-direction:column; }
     .topbar { background:var(--topbar); border-bottom:1px solid var(--border); padding:12px 28px; display:flex; justify-content:flex-end; align-items:center; }
     .admin { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:15px; }
     .avatar { width:26px; height:26px; border-radius:50%; background:#8a8177; }
     .caret { font-size:12px; color:#555; }
 
-    /* Views */
     .content { padding:26px 32px; }
     .view { display:none; flex-direction:column; gap:22px; }
     .view.active { display:flex; }
     .page-title { font-size:26px; font-weight:700; }
     .view-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 
-    /* Stat cards (no outline on first card) */
     .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
     .stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
     .stat-label { font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
@@ -52,7 +48,6 @@
     .stat.highlight .stat-body { display:flex; flex-direction:column; flex:1; gap:4px; }
     .stat.highlight .stat-unit { align-self:flex-end; }
 
-    /* Cards & lists */
     .grid-2 { display:grid; grid-template-columns:1fr 1.1fr; gap:18px; }
     .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; }
     .card-title { font-size:19px; margin-bottom:12px; }
@@ -63,7 +58,6 @@
     .link { display:inline-block; margin-top:10px; color:var(--green); font-weight:700; font-size:14px; text-decoration:none; }
     .link:hover { text-decoration:underline; }
 
-    /* Tables */
     .table-wrap { overflow-x:auto; }
     .table { width:100%; border-collapse:collapse; font-size:15px; }
     .table th { text-align:left; font-weight:700; padding:8px 10px; }
@@ -75,7 +69,6 @@
     .seal.pending { background:#7a5a48; }
     .seal.paid { background:var(--green); }
 
-    /* Buttons & form */
     .btn { background:var(--green); color:#fff; border:none; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
     .btn:hover { background:#256428; }
     .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
@@ -84,12 +77,10 @@
     .form-grid input, .form-grid select { font:inherit; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
     .form-actions { display:flex; gap:10px; }
 
-    /* Placeholder */
     .placeholder { text-align:center; padding:60px 20px; }
     .placeholder h2 { margin-bottom:8px; }
     .placeholder p { color:#666; }
 
-    /* Responsive */
     @media (max-width:1100px){ .stats{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} .form-grid{grid-template-columns:1fr;} }
     @media (max-width:760px){ .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:static; padding:16px;} .nav{flex-direction:row; flex-wrap:wrap;} .stats{grid-template-columns:1fr;} .content{padding:18px;} }
   </style>
@@ -97,7 +88,6 @@
 <body>
   <div class="app">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="brand">
         <h1>Grace Harvest</h1>
@@ -117,7 +107,6 @@
       </nav>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
       <header class="topbar">
         <div class="admin"><span class="avatar"></span> Admin <span class="caret">▾</span></div>
@@ -125,7 +114,7 @@
 
       <div class="content">
 
-        <!-- DASHBOARD (fresh start: all zeros) -->
+        <!-- DASHBOARD -->
         <section class="view active" id="view-dashboard">
           <h2 class="page-title">Dashboard Overview</h2>
 
@@ -136,34 +125,29 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Total Sacks in Stock</span>
-                <strong class="stat-value">0</strong>
+                <strong class="stat-value" id="statSacks">0</strong>
                 <span class="stat-unit">Sako</span>
               </div>
             </div>
             <div class="stat">
               <span class="stat-label">Total Kilo in Stock</span>
-              <strong class="stat-value">0</strong>
+              <strong class="stat-value" id="statKilos">0</strong>
               <span class="stat-unit">Kilo</span>
             </div>
             <div class="stat">
               <span class="stat-label">Today's Sales</span>
-              <strong class="stat-value">₱ 0</strong>
+              <strong class="stat-value" id="statSales">₱ 0</strong>
             </div>
             <div class="stat">
               <span class="stat-label">Today's Profit</span>
-              <strong class="stat-value">₱ 0</strong>
+              <strong class="stat-value" id="statProfit">₱ 0</strong>
             </div>
           </div>
 
           <div class="grid-2">
             <div class="card">
               <h3 class="card-title">Stock Summary</h3>
-              <ul class="list">
-                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
-                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>0</strong></li>
-              </ul>
+              <ul class="list" id="stockSummaryList"></ul>
               <a href="#" class="link" data-goto="stock">View All</a>
             </div>
 
@@ -200,9 +184,50 @@
                 <thead>
                   <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Kilo</th><th>Amount</th></tr>
                 </thead>
-                <tbody>
+                <tbody id="recentSalesBody">
                   <tr><td colspan="6" class="empty">No sales recorded yet.</td></tr>
                 </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- STOCK / INVENTORY (now a real module) -->
+        <section class="view" id="view-stock">
+          <div class="view-head">
+            <h2 class="page-title">Stock / Inventory</h2>
+            <button class="btn" id="toggleStockForm">+ Add Stock</button>
+          </div>
+
+          <form class="card form" id="stockForm" hidden>
+            <h3 class="card-title">New Stock Entry</h3>
+            <div class="form-grid">
+              <label>Item
+                <select name="item">
+                  <option>Premium Rice 50kg</option>
+                  <option>Well Milled Rice 50kg</option>
+                  <option>Regular Milled Rice 50kg</option>
+                  <option>Dinorado 25kg</option>
+                  <option>Jasmine Rice 25kg</option>
+                </select>
+              </label>
+              <label>Sacks (Sako)
+                <input name="sacks" type="number" min="1" step="1" required placeholder="e.g. 10" />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn">Save Stock</button>
+              <button type="button" class="btn ghost" id="cancelStockForm">Cancel</button>
+            </div>
+          </form>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Item</th><th>Kilo per Sack</th><th>Sacks in Stock</th><th>Total Kilo</th></tr>
+                </thead>
+                <tbody id="stockTableBody"></tbody>
               </table>
             </div>
           </div>
