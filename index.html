@@ -37,10 +37,10 @@
     .page-title { font-size:26px; font-weight:700; }
     .view-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 
-    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:18px; }
     .stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
     .stat-label { font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
-    .stat-value { font-size:32px; font-weight:700; line-height:1.1; }
+    .stat-value { font-size:30px; font-weight:700; line-height:1.1; }
     .stat-unit { align-self:flex-end; font-size:14px; }
     .stat.highlight { flex-direction:row; align-items:center; gap:14px; }
     .sack { width:56px; height:56px; flex:none; }
@@ -97,6 +97,7 @@
     .placeholder h2 { margin-bottom:8px; }
     .placeholder p { color:#666; }
 
+    @media (max-width:1400px){ .stats{grid-template-columns:repeat(3,1fr);} }
     @media (max-width:1100px){ .stats{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} .form-grid{grid-template-columns:repeat(2,1fr);} }
     @media (max-width:760px){ .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:static; padding:16px;} .nav{flex-direction:row; flex-wrap:wrap;} .stats{grid-template-columns:1fr;} .content{padding:18px;} .form-grid{grid-template-columns:1fr;} }
   </style>
@@ -156,6 +157,10 @@
             <div class="stat">
               <span class="stat-label">Today's Profit</span>
               <strong class="stat-value" id="statProfit">₱ 0</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Grand Total Profit</span>
+              <strong class="stat-value" id="statGrandProfit">₱ 0</strong>
             </div>
           </div>
 
@@ -364,7 +369,7 @@
               <button type="submit" class="btn">Save Installment</button>
               <button type="button" class="btn ghost" id="cancelForm">Cancel</button>
             </div>
-            <p class="hint">Cash = marked Fully Paid automatically. Credit = balance starts at the full amount; record the 1st, 2nd… payments with the Payment button.</p>
+            <p class="hint">Cash = marked Fully Paid automatically. Credit = balance starts at the full amount; record the 1st, 2nd… payments with the Payment button. Delivered sacks (Quantity of Sack) are deducted from stock even if not yet fully paid.</p>
           </form>
 
           <div class="card">
@@ -413,15 +418,27 @@
     const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); return el; };
     const itemLabel = r => r.item + ((r.sacks || 0) > 0 ? ' (' + r.sacks + ' × ' + (r.kilo || 0) + 'kg)' : '');
 
-    // ---------- Stock math ----------
+    // ---------- Stock math (Sales + Installments both deduct stock) ----------
     const latestEntry = item => stockEntries.find(e => e.item === item);
     function availableSacks(item){
       const rec = stockEntries.filter(e => e.item === item).reduce((s, e) => s + e.sacks, 0);
       const sold = sales.filter(s => s.item === item).reduce((s, x) => s + x.sacks, 0);
-      return rec - sold;
+      const delivered = installments.filter(i => i.item === item).reduce((s, i) => s + (i.sacks || 0), 0);
+      return rec - sold - delivered;
+    }
+    function availableKilos(item){
+      const rec = stockEntries.filter(e => e.item === item).reduce((s, e) => s + e.sacks * e.kilo, 0);
+      const soldK = sales.filter(s => s.item === item).reduce((s, x) => s + x.kilo, 0);
+      const delK = installments.filter(i => i.item === item).reduce((s, i) => s + (i.sacks || 0) * (i.kilo || 0), 0);
+      return rec - soldK - delK;
     }
     function totalPurchase(){
       return stockEntries.reduce((s, e) => s + e.sacks * e.price, 0);
+    }
+    function grandProfit(){
+      let p = sales.reduce((s, x) => s + (x.profit || 0), 0);
+      p += installments.reduce((s, i) => s + (i.profit || 0), 0);
+      return p;
     }
     function nextInvoice(){
       let max = 0;
@@ -441,7 +458,6 @@
       installments.forEach(i => { const c = add(i.customer); if (c) { c.purchases++; c.bought += i.total; c.balance += i.balance; } });
       return Object.values(m).sort((a, b) => a.name.localeCompare(b.name));
     }
-    // History status: Cash = On-Time; Credit = Pending until fully paid (Delayed if due date passed); Fully Paid when balance 0
     function payStatus(i){
       if ((i.basis || 'credit') === 'cash') return 'On-Time';
       if (i.balance > 0) return (i.due && i.due < todayISO()) ? 'Delayed' : 'Pending';
@@ -480,6 +496,7 @@
       RICE.forEach(n => { totSacks += Math.max(0, availableSacks(n)); });
       setText('statSacks', totSacks.toLocaleString());
       setText('statPurchase', peso(totalPurchase()));
+      setText('statGrandProfit', peso(grandProfit()));
 
       const today = todayISO();
       let ts = 0, tp = 0;
@@ -582,7 +599,7 @@
       const dl = e.target.closest('[data-del-sale]');
       if (dl) { if (confirm('Delete this sale? Stock will be returned.')) { sales.splice(Number(dl.dataset.delSale), 1); save(); renderAll(); } return; }
       const di = e.target.closest('[data-del-inst]');
-      if (di) { if (confirm('Delete this installment?')) { installments.splice(Number(di.dataset.delInst), 1); save(); renderAll(); } }
+      if (di) { if (confirm('Delete this installment? Stock will be returned.')) { installments.splice(Number(di.dataset.delInst), 1); save(); renderAll(); } }
     });
 
     on('showAllHistory', 'click', () => { selectedCustomer = null; renderCustomers(); });
@@ -646,7 +663,7 @@
       e.target.reset(); e.target.hidden = true;
     });
 
-    // ---------- Installment form (Cash / Credit) ----------
+    // ---------- Installment form (Cash / Credit; delivered sacks deduct stock) ----------
     let currentBasis = 'credit';
     document.querySelectorAll('.basis-btn').forEach(b => {
       b.addEventListener('click', () => {
@@ -666,15 +683,19 @@
     on('installmentForm', 'submit', e => {
       e.preventDefault();
       const f = new FormData(e.target);
+      const item = f.get('item');
       const total = Math.max(0, Number(f.get('total')));
       const due = f.get('due');
+      const sacks = Math.max(0, Number(f.get('sacks')) || 0);
+      const kilo = Math.max(0, Number(f.get('kilo')) || 0);
       if (currentBasis === 'credit' && !due) { alert('Please set the Due Date for credit purchases.'); return; }
+      if (sacks > 0 && sacks > availableSacks(item)) { alert('Not enough stock for "' + item + '". Available: ' + availableSacks(item) + ' sack(s).'); return; }
       const pdate = f.get('pdate') || todayISO();
+      const ent = latestEntry(item);
+      const profit = (sacks > 0 && ent) ? (total - sacks * ent.price) : 0;
       installments.unshift({
-        customer: f.get('customer').trim(), item: f.get('item'),
-        kilo: Math.max(0, Number(f.get('kilo')) || 0),
-        sacks: Math.max(0, Number(f.get('sacks')) || 0),
-        total, pdate, due: due || '', basis: currentBasis,
+        customer: f.get('customer').trim(), item, kilo, sacks,
+        total, pdate, due: due || '', basis: currentBasis, profit,
         balance: currentBasis === 'cash' ? 0 : total,
         payments: currentBasis === 'cash' ? [{ date: pdate, amount: total }] : []
       });
