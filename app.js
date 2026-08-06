@@ -1,18 +1,19 @@
-// ---------- Catalog ----------
+// ---------- Catalog: kilos per sack ----------
 const ITEM_KILO = {
   'Premium Rice 50kg': 50, 'Well Milled Rice 50kg': 50, 'Regular Milled Rice 50kg': 50,
   'Dinorado 25kg': 25, 'Jasmine Rice 25kg': 25
 };
+const ITEMS = Object.keys(ITEM_KILO);
 
-// ---------- Data (fresh start, auto-saved in this browser) ----------
-let stock = { 'Premium Rice 50kg':0, 'Well Milled Rice 50kg':0, 'Regular Milled Rice 50kg':0, 'Dinorado 25kg':0, 'Jasmine Rice 25kg':0 };
-let installments = [];
+// ---------- Data (auto-saved in this browser) ----------
+let stockEntries = [];   // { item, sacks, price }
+let installments = [];   // { customer, item, total, balance, due, status }
 
-function save(){ localStorage.setItem('ghrt-data', JSON.stringify({ stock, installments })); }
+function save(){ localStorage.setItem('ghrt-data-v2', JSON.stringify({ stockEntries, installments })); }
 function load(){
   try {
-    const d = JSON.parse(localStorage.getItem('ghrt-data') || 'null');
-    if (d) { stock = Object.assign(stock, d.stock || {}); installments = d.installments || []; }
+    const d = JSON.parse(localStorage.getItem('ghrt-data-v2') || 'null');
+    if (d) { stockEntries = d.stockEntries || []; installments = d.installments || []; }
   } catch (e) {}
 }
 
@@ -23,23 +24,30 @@ const setText = (id, t) => { const el = document.getElementById(id); if (el) el.
 // ---------- Dashboard ----------
 function renderDashboard(){
   let sacks = 0, kilos = 0;
-  for (const n in stock) { sacks += stock[n]; kilos += stock[n] * (ITEM_KILO[n] || 0); }
+  const perItem = {};
+  ITEMS.forEach(n => perItem[n] = 0);
+  stockEntries.forEach(e => {
+    sacks += e.sacks;
+    kilos += e.sacks * (ITEM_KILO[e.item] || 0);
+    perItem[e.item] = (perItem[e.item] || 0) + e.sacks;
+  });
   setText('statSacks', sacks.toLocaleString());
   setText('statKilos', kilos.toLocaleString());
   const list = document.getElementById('stockSummaryList');
-  if (list) list.innerHTML = Object.keys(stock)
-    .map(n => `<li><span>${n}</span><i class="dots"></i><strong>${stock[n]}</strong></li>`).join('');
+  if (list) list.innerHTML = ITEMS
+    .map(n => `<li><span>${n}</span><i class="dots"></i><strong>${perItem[n]}</strong></li>`).join('');
 }
 
-// ---------- Stock ----------
+// ---------- Stock / Inventory ----------
 function renderStock(){
   const body = document.getElementById('stockTableBody');
   if (!body) return;
-  const has = Object.values(stock).some(v => v > 0);
-  body.innerHTML = has
-    ? Object.keys(stock).map(n =>
-        `<tr><td>${n}</td><td>${ITEM_KILO[n]} kg</td><td>${stock[n]}</td><td>${(stock[n] * ITEM_KILO[n]).toLocaleString()}</td></tr>`).join('')
-    : '<tr><td colspan="4" class="empty">No stock encoded yet.</td></tr>';
+  body.innerHTML = stockEntries.length
+    ? stockEntries.map(e => {
+        const k = ITEM_KILO[e.item] || 0;
+        return `<tr><td>${e.item}</td><td>${k} kg</td><td>${e.sacks}</td><td>${(e.sacks * k).toLocaleString()}</td><td>${peso(e.price)}</td><td><strong>${peso(e.sacks * e.price)}</strong></td></tr>`;
+      }).join('')
+    : '<tr><td colspan="6" class="empty">No stock encoded yet. Click "+ Add Stock Entry".</td></tr>';
 }
 
 // ---------- Installments ----------
@@ -48,9 +56,9 @@ function statusCell(s){
   if (s === 'pending') return '<span class="seal pending"></span>Pending';
   return '<span class="seal paid"></span>Paid';
 }
-const rowHTML = i => `<tr><td>${i.customer}</td><td>${i.item}</td><td>${peso(i.total)}</td><td>${peso(i.balance)}</td><td>${fmtDate(i.due)}</td><td>${statusCell(i.status)}</td></tr>`;
+const instRow = i => `<tr><td>${i.customer}</td><td>${i.item}</td><td>${peso(i.total)}</td><td>${peso(i.balance)}</td><td>${fmtDate(i.due)}</td><td>${statusCell(i.status)}</td></tr>`;
 function renderInstallments(){
-  const html = installments.length ? installments.map(rowHTML).join('')
+  const html = installments.length ? installments.map(instRow).join('')
     : '<tr><td colspan="6" class="empty">No installments recorded yet.</td></tr>';
   const a = document.getElementById('dashInstallments');
   const b = document.getElementById('allInstallments');
@@ -60,7 +68,7 @@ function renderInstallments(){
 
 function renderAll(){ renderDashboard(); renderStock(); renderInstallments(); }
 
-// ---------- Views ----------
+// ---------- View switching ----------
 function showView(name, label){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const map = { dashboard:'view-dashboard', stock:'view-stock', installments:'view-installments' };
@@ -89,9 +97,11 @@ document.getElementById('cancelStockForm').addEventListener('click', () => stock
 stockForm.addEventListener('submit', e => {
   e.preventDefault();
   const f = new FormData(stockForm);
-  const name = f.get('item');
-  const sacks = Math.max(1, Math.floor(Number(f.get('sacks'))));
-  stock[name] = (stock[name] || 0) + sacks;
+  stockEntries.unshift({
+    item: f.get('item'),
+    sacks: Math.max(1, Math.floor(Number(f.get('sacks')))),
+    price: Math.max(0, Number(f.get('price')))
+  });
   save(); renderAll();
   stockForm.reset(); stockForm.hidden = true;
 });
