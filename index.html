@@ -16,7 +16,7 @@
     body { font-family:'Roboto Condensed',Arial,sans-serif; background:var(--bg); color:var(--text); }
     .app { display:flex; min-height:100vh; }
 
-    /* Sidebar (text-only nav, no icons) */
+    /* Sidebar */
     .sidebar { width:250px; flex:none; background:var(--sidebar-bg); color:var(--sidebar-text); padding:28px 18px; position:sticky; top:0; height:100vh; }
     .brand { text-align:center; margin-bottom:34px; }
     .brand h1 { font-size:26px; letter-spacing:1px; line-height:1.15; text-transform:uppercase; }
@@ -40,13 +40,13 @@
     .page-title { font-size:26px; font-weight:700; }
     .view-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 
-    /* Stat cards */
+    /* Stat cards (no outline on first card) */
     .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
     .stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
     .stat-label { font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
     .stat-value { font-size:32px; font-weight:700; line-height:1.1; }
     .stat-unit { align-self:flex-end; font-size:14px; }
-    .stat.highlight { border:2px solid var(--green); flex-direction:row; align-items:center; gap:14px; }
+    .stat.highlight { flex-direction:row; align-items:center; gap:14px; }
     .sack { width:56px; height:56px; flex:none; }
     .sack svg { width:100%; height:100%; fill:var(--green); }
     .stat.highlight .stat-body { display:flex; flex-direction:column; flex:1; gap:4px; }
@@ -68,6 +68,7 @@
     .table { width:100%; border-collapse:collapse; font-size:15px; }
     .table th { text-align:left; font-weight:700; padding:8px 10px; }
     .table td { padding:8px 10px; font-weight:500; }
+    .empty { text-align:center; color:#9a917f; padding:14px 10px !important; font-style:italic; }
     .status { font-weight:700; }
     .status.on-time { color:var(--green); }
     .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
@@ -96,7 +97,7 @@
 <body>
   <div class="app">
 
-    <!-- SIDEBAR (icons removed) -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="brand">
         <h1>Grace Harvest</h1>
@@ -124,7 +125,7 @@
 
       <div class="content">
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (fresh start: all zeros) -->
         <section class="view active" id="view-dashboard">
           <h2 class="page-title">Dashboard Overview</h2>
 
@@ -135,22 +136,22 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Total Sacks in Stock</span>
-                <strong class="stat-value">124</strong>
+                <strong class="stat-value">0</strong>
                 <span class="stat-unit">Sako</span>
               </div>
             </div>
             <div class="stat">
               <span class="stat-label">Total Kilo in Stock</span>
-              <strong class="stat-value">6,240</strong>
+              <strong class="stat-value">0</strong>
               <span class="stat-unit">Kilo</span>
             </div>
             <div class="stat">
               <span class="stat-label">Today's Sales</span>
-              <strong class="stat-value">₱ 18,450</strong>
+              <strong class="stat-value">₱ 0</strong>
             </div>
             <div class="stat">
               <span class="stat-label">Today's Profit</span>
-              <strong class="stat-value">₱ 6,230</strong>
+              <strong class="stat-value">₱ 0</strong>
             </div>
           </div>
 
@@ -158,10 +159,10 @@
             <div class="card">
               <h3 class="card-title">Stock Summary</h3>
               <ul class="list">
-                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>45</strong></li>
-                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>38</strong></li>
-                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>25</strong></li>
-                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>16</strong></li>
+                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>0</strong></li>
               </ul>
               <a href="#" class="link" data-goto="stock">View All</a>
             </div>
@@ -169,11 +170,11 @@
             <div class="card">
               <h3 class="card-title">Top 5 Best Selling <small>(This Month)</small></h3>
               <ul class="list">
-                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>128</strong></li>
-                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>96</strong></li>
-                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>72</strong></li>
-                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>48</strong></li>
-                <li><span>Jasmine Rice 25kg</span><i class="dots"></i><strong>36</strong></li>
+                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>0</strong></li>
+                <li><span>Jasmine Rice 25kg</span><i class="dots"></i><strong>0</strong></li>
               </ul>
               <a href="#" class="link" data-goto="reports">View Report</a>
             </div>
@@ -200,10 +201,7 @@
                   <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Kilo</th><th>Amount</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>May 21, 2025</td><td>INV-0001</td><td>Juan Dela Cruz</td><td>Premium Rice 50kg</td><td>25</td><td>₱ 1,250</td></tr>
-                  <tr><td>May 21, 2025</td><td>INV-0002</td><td>Maria Santos</td><td>Well Milled Rice 50kg</td><td>10</td><td>₱ 520</td></tr>
-                  <tr><td>May 21, 2025</td><td>INV-0003</td><td>Pedro Reyes</td><td>Regular Milled Rice 50kg</td><td>15</td><td>₱ 750</td></tr>
-                  <tr><td>May 21, 2025</td><td>INV-0004</td><td>Ana Lopez</td><td>Dinorado 25kg</td><td>25</td><td>₱ 900</td></tr>
+                  <tr><td colspan="6" class="empty">No sales recorded yet.</td></tr>
                 </tbody>
               </table>
             </div>
