@@ -68,9 +68,12 @@
     .status { font-weight:700; }
     .status.on-time { color:var(--green); }
     .status.delayed { color:#b3402f; }
+    .status.pending { color:#7a5a48; }
+    .status.paid { color:var(--green); }
     .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
     .seal.paid { background:var(--green); }
     .seal.overdue { background:#b3402f; }
+    .seal.pending { background:#7a5a48; }
     .tag { font-weight:700; font-size:12px; padding:3px 8px; border-radius:999px; }
     .tag.cash { background:#e8f5e9; color:#1b5e20; }
     .tag.credit { background:#efe4d7; color:#7a5a48; }
@@ -438,13 +441,13 @@
       installments.forEach(i => { const c = add(i.customer); if (c) { c.purchases++; c.bought += i.total; c.balance += i.balance; } });
       return Object.values(m).sort((a, b) => a.name.localeCompare(b.name));
     }
+    // History status: Cash = On-Time; Credit = Pending until fully paid (Delayed if due date passed); Fully Paid when balance 0
     function payStatus(i){
-      if (i.balance <= 0) {
-        const last = (i.payments && i.payments.length) ? i.payments.map(p => p.date).sort().pop() : (i.pdate || '');
-        return (!i.due || last <= i.due) ? 'On-Time' : 'Delayed';
-      }
-      return (i.due && i.due < todayISO()) ? 'Delayed' : 'On-Time';
+      if ((i.basis || 'credit') === 'cash') return 'On-Time';
+      if (i.balance > 0) return (i.due && i.due < todayISO()) ? 'Delayed' : 'Pending';
+      return 'Fully Paid';
     }
+    const HIST_CLASS = { 'On-Time':'on-time', 'Delayed':'delayed', 'Pending':'pending', 'Fully Paid':'paid' };
     function historyRows(filterName){
       const rows = [];
       sales.forEach(s => rows.push({ customer:s.customer, item:itemLabel(s), date:s.date, amount:s.amount, basis:'Cash', status:'On-Time' }));
@@ -467,7 +470,7 @@
       const rows = historyRows(selectedCustomer);
       if (hb) hb.innerHTML = rows.length
         ? rows.map(r =>
-            '<tr><td>' + r.customer + '</td><td>' + r.item + '</td><td>' + fmtDate(r.date) + '</td><td>' + peso(r.amount) + '</td><td><span class="tag ' + r.basis.toLowerCase() + '">' + r.basis + '</span></td><td><span class="status ' + (r.status === 'On-Time' ? 'on-time">On-Time' : 'delayed">Delayed') + '</span></td></tr>').join('')
+            '<tr><td>' + r.customer + '</td><td>' + r.item + '</td><td>' + fmtDate(r.date) + '</td><td>' + peso(r.amount) + '</td><td><span class="tag ' + r.basis.toLowerCase() + '">' + r.basis + '</span></td><td><span class="status ' + (HIST_CLASS[r.status] || 'on-time') + '">' + r.status + '</span></td></tr>').join('')
         : '<tr><td colspan="6" class="empty">No history yet.</td></tr>';
     }
 
@@ -527,13 +530,13 @@
     function instStatus(i){
       if (i.balance <= 0) return 'paid';
       if (i.due && i.due < todayISO()) return 'overdue';
-      return 'ontime';
+      return 'pending';
     }
     function instRow(i, idx){
       const st = instStatus(i);
       const stCell = st === 'paid' ? '<span class="seal paid"></span>Fully Paid'
         : st === 'overdue' ? '<span class="seal overdue"></span>Overdue'
-        : '<span class="status on-time">On Time</span>';
+        : '<span class="seal pending"></span>Pending';
       const basisCell = (i.basis === 'cash') ? '<span class="tag cash">Cash</span>' : '<span class="tag credit">Credit</span>';
       const pays = (i.payments || []).length;
       const rowClass = st === 'paid' ? ' class="row-paid"' : '';
