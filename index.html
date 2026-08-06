@@ -3,184 +3,267 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grace Harvest Rice Trading — Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Grace Harvest Rice Trading | Business Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>" />
+  <style>
+    :root {
+      --sidebar-bg: #3a271c; --sidebar-text: #f3ead9;
+      --bg: #f6f0e2; --topbar: #e9e2d2; --card: #fbfaf7;
+      --green: #2e7d32; --text: #181818; --border: #e3ddcf;
+      --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Roboto Condensed',Arial,sans-serif; background:var(--bg); color:var(--text); }
+    .app { display:flex; min-height:100vh; }
+
+    /* Sidebar (text-only nav, no icons) */
+    .sidebar { width:250px; flex:none; background:var(--sidebar-bg); color:var(--sidebar-text); padding:28px 18px; position:sticky; top:0; height:100vh; }
+    .brand { text-align:center; margin-bottom:34px; }
+    .brand h1 { font-size:26px; letter-spacing:1px; line-height:1.15; text-transform:uppercase; }
+    .brand span { color:#cbb9a6; font-size:15px; }
+    .nav { display:flex; flex-direction:column; gap:6px; }
+    .nav-link { display:block; padding:10px 18px; border-radius:8px; color:var(--sidebar-text); text-decoration:none; font-size:16px; font-weight:500; }
+    .nav-link:hover { background:rgba(255,255,255,.08); }
+    .nav-link.active { background:var(--green); color:#fff; border-radius:999px; }
+
+    /* Topbar */
+    .main { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .topbar { background:var(--topbar); border-bottom:1px solid var(--border); padding:12px 28px; display:flex; justify-content:flex-end; align-items:center; }
+    .admin { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:15px; }
+    .avatar { width:26px; height:26px; border-radius:50%; background:#8a8177; }
+    .caret { font-size:12px; color:#555; }
+
+    /* Views */
+    .content { padding:26px 32px; }
+    .view { display:none; flex-direction:column; gap:22px; }
+    .view.active { display:flex; }
+    .page-title { font-size:26px; font-weight:700; }
+    .view-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+
+    /* Stat cards */
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+    .stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
+    .stat-label { font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
+    .stat-value { font-size:32px; font-weight:700; line-height:1.1; }
+    .stat-unit { align-self:flex-end; font-size:14px; }
+    .stat.highlight { border:2px solid var(--green); flex-direction:row; align-items:center; gap:14px; }
+    .sack { width:56px; height:56px; flex:none; }
+    .sack svg { width:100%; height:100%; fill:var(--green); }
+    .stat.highlight .stat-body { display:flex; flex-direction:column; flex:1; gap:4px; }
+    .stat.highlight .stat-unit { align-self:flex-end; }
+
+    /* Cards & lists */
+    .grid-2 { display:grid; grid-template-columns:1fr 1.1fr; gap:18px; }
+    .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; }
+    .card-title { font-size:19px; margin-bottom:12px; }
+    .card-title small { font-size:14px; font-weight:500; }
+    .list { list-style:none; }
+    .list li { display:flex; align-items:baseline; gap:8px; padding:6px 0; font-weight:500; }
+    .list .dots { flex:1; border-bottom:2px dotted #c9c2b4; transform:translateY(-4px); }
+    .link { display:inline-block; margin-top:10px; color:var(--green); font-weight:700; font-size:14px; text-decoration:none; }
+    .link:hover { text-decoration:underline; }
+
+    /* Tables */
+    .table-wrap { overflow-x:auto; }
+    .table { width:100%; border-collapse:collapse; font-size:15px; }
+    .table th { text-align:left; font-weight:700; padding:8px 10px; }
+    .table td { padding:8px 10px; font-weight:500; }
+    .status { font-weight:700; }
+    .status.on-time { color:var(--green); }
+    .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
+    .seal.pending { background:#7a5a48; }
+    .seal.paid { background:var(--green); }
+
+    /* Buttons & form */
+    .btn { background:var(--green); color:#fff; border:none; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
+    .btn:hover { background:#256428; }
+    .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:14px; }
+    .form-grid label { display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:14px; }
+    .form-grid input, .form-grid select { font:inherit; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+    .form-actions { display:flex; gap:10px; }
+
+    /* Placeholder */
+    .placeholder { text-align:center; padding:60px 20px; }
+    .placeholder h2 { margin-bottom:8px; }
+    .placeholder p { color:#666; }
+
+    /* Responsive */
+    @media (max-width:1100px){ .stats{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} .form-grid{grid-template-columns:1fr;} }
+    @media (max-width:760px){ .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:static; padding:16px;} .nav{flex-direction:row; flex-wrap:wrap;} .stats{grid-template-columns:1fr;} .content{padding:18px;} }
+  </style>
 </head>
 <body>
-<div class="app">
+  <div class="app">
 
-  <!-- ============ SIDEBAR ============ -->
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <h1>GRACE<br />HARVEST</h1>
-      <span>Rice Trading</span>
-    </div>
-
-    <nav class="nav">
-      <a href="#" class="nav-item active">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-        Dashboard
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9"/><path d="M10 13h4"/></svg>
-        Stock / Inventory
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
-        Sales
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/></svg>
-        Customers
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Installments
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
-        Utang / Balance
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Suppliers
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="13" height="10" rx="1"/><path d="M14 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-        Delivery
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
-        Reports
-      </a>
-      <a href="#" class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
-        Settings
-      </a>
-    </nav>
-  </aside>
-
-  <!-- ============ MAIN ============ -->
-  <div class="main">
-    <header class="topbar">
-      <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
-      <div class="admin" id="adminMenu">
-        <span class="avatar"></span> Admin
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>
-        <div class="dropdown" id="adminDropdown">
-          <a href="#">Profile</a>
-          <a href="#">Logout</a>
-        </div>
+    <!-- SIDEBAR (icons removed) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Grace Harvest</h1>
+        <span>Rice Trading</span>
       </div>
-    </header>
+      <nav class="nav">
+        <a href="#" class="nav-link active" data-view="dashboard" data-label="Dashboard">Dashboard</a>
+        <a href="#" class="nav-link" data-view="stock" data-label="Stock / Inventory">Stock / Inventory</a>
+        <a href="#" class="nav-link" data-view="sales" data-label="Sales">Sales</a>
+        <a href="#" class="nav-link" data-view="customers" data-label="Customers">Customers</a>
+        <a href="#" class="nav-link" data-view="installments" data-label="Installments">Installments</a>
+        <a href="#" class="nav-link" data-view="utang" data-label="Utang / Balance">Utang / Balance</a>
+        <a href="#" class="nav-link" data-view="suppliers" data-label="Suppliers">Suppliers</a>
+        <a href="#" class="nav-link" data-view="delivery" data-label="Delivery">Delivery</a>
+        <a href="#" class="nav-link" data-view="reports" data-label="Reports">Reports</a>
+        <a href="#" class="nav-link" data-view="settings" data-label="Settings">Settings</a>
+      </nav>
+    </aside>
 
-    <main class="content">
-      <h2 class="page-title">Dashboard Overview</h2>
+    <!-- MAIN -->
+    <main class="main">
+      <header class="topbar">
+        <div class="admin"><span class="avatar"></span> Admin <span class="caret">▾</span></div>
+      </header>
 
-      <!-- ===== STAT CARDS ===== -->
-      <section class="stats">
-        <article class="stat highlight">
-          <svg class="sack" viewBox="0 0 64 64" aria-hidden="true">
-            <path fill="#2e7d32" d="M25 8h14l2.5 7C50 19 55 28 55 37c0 11-10 17-23 17S9 48 9 37c0-9 5-18 13.5-22L25 8z"/>
-            <path fill="#1b5e20" d="M24 8h16l1.8 5H22.2L24 8z"/>
-            <path fill="#eaf6ea" d="M32 34c0-5 4-9 9-9 0 5-4 9-9 9zm0 0c0-5-4-9-9-9 0 5 4 9 9 9z"/>
-            <path stroke="#eaf6ea" stroke-width="2.5" d="M32 34v10"/>
-          </svg>
-          <div class="stat-body">
-            <span class="label">Total Sacks in Stock</span>
-            <span class="value">124</span>
-            <span class="unit">Sako</span>
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <section class="view active" id="view-dashboard">
+          <h2 class="page-title">Dashboard Overview</h2>
+
+          <div class="stats">
+            <div class="stat highlight">
+              <div class="sack">
+                <svg viewBox="0 0 24 24"><path d="M8.5 3h7l-1 3h-5l-1-3z"/><path d="M9.5 7h5c2.8 2.6 4.5 6 4.5 8.8A4.2 4.2 0 0 1 14.8 20H9.2A4.2 4.2 0 0 1 5 15.8C5 13 6.7 9.6 9.5 7z"/></svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Total Sacks in Stock</span>
+                <strong class="stat-value">124</strong>
+                <span class="stat-unit">Sako</span>
+              </div>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Total Kilo in Stock</span>
+              <strong class="stat-value">6,240</strong>
+              <span class="stat-unit">Kilo</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Today's Sales</span>
+              <strong class="stat-value">₱ 18,450</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Today's Profit</span>
+              <strong class="stat-value">₱ 6,230</strong>
+            </div>
           </div>
-        </article>
 
-        <article class="stat">
-          <span class="label">Total Kilo in Stock</span>
-          <span class="value">6,240</span>
-          <span class="unit">Kilo</span>
-        </article>
+          <div class="grid-2">
+            <div class="card">
+              <h3 class="card-title">Stock Summary</h3>
+              <ul class="list">
+                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>45</strong></li>
+                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>38</strong></li>
+                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>25</strong></li>
+                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>16</strong></li>
+              </ul>
+              <a href="#" class="link" data-goto="stock">View All</a>
+            </div>
 
-        <article class="stat">
-          <span class="label">Today's Sales</span>
-          <span class="value">₱ 18,450</span>
-        </article>
+            <div class="card">
+              <h3 class="card-title">Top 5 Best Selling <small>(This Month)</small></h3>
+              <ul class="list">
+                <li><span>Premium Rice 50kg</span><i class="dots"></i><strong>128</strong></li>
+                <li><span>Well Milled Rice 50kg</span><i class="dots"></i><strong>96</strong></li>
+                <li><span>Regular Milled Rice 50kg</span><i class="dots"></i><strong>72</strong></li>
+                <li><span>Dinorado 25kg</span><i class="dots"></i><strong>48</strong></li>
+                <li><span>Jasmine Rice 25kg</span><i class="dots"></i><strong>36</strong></li>
+              </ul>
+              <a href="#" class="link" data-goto="reports">View Report</a>
+            </div>
+          </div>
 
-        <article class="stat">
-          <span class="label">Today's Profit</span>
-          <span class="value">₱ 6,230</span>
-        </article>
-      </section>
+          <div class="card">
+            <h3 class="card-title">Installment Tracker</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>
+                </thead>
+                <tbody id="dashInstallments"></tbody>
+              </table>
+            </div>
+            <a href="#" class="link" data-goto="installments">View All Installments</a>
+          </div>
 
-      <!-- ===== STOCK + BEST SELLING ===== -->
-      <section class="grid-2">
-        <article class="card">
-          <h3>Stock Summary</h3>
-          <div class="list-row"><span>Premium Rice 50kg</span><span class="dots"></span><span class="num">45</span></div>
-          <div class="list-row"><span>Well Milled Rice 50kg</span><span class="dots"></span><span class="num">38</span></div>
-          <div class="list-row"><span>Regular Milled Rice 50kg</span><span class="dots"></span><span class="num">25</span></div>
-          <div class="list-row"><span>Dinorado 25kg</span><span class="dots"></span><span class="num">16</span></div>
-          <a href="#" class="link">View All</a>
-        </article>
+          <div class="card">
+            <h3 class="card-title">Recent Sales</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Kilo</th><th>Amount</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>May 21, 2025</td><td>INV-0001</td><td>Juan Dela Cruz</td><td>Premium Rice 50kg</td><td>25</td><td>₱ 1,250</td></tr>
+                  <tr><td>May 21, 2025</td><td>INV-0002</td><td>Maria Santos</td><td>Well Milled Rice 50kg</td><td>10</td><td>₱ 520</td></tr>
+                  <tr><td>May 21, 2025</td><td>INV-0003</td><td>Pedro Reyes</td><td>Regular Milled Rice 50kg</td><td>15</td><td>₱ 750</td></tr>
+                  <tr><td>May 21, 2025</td><td>INV-0004</td><td>Ana Lopez</td><td>Dinorado 25kg</td><td>25</td><td>₱ 900</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-        <article class="card">
-          <h3>Top 5 Best Selling (This Month)</h3>
-          <div class="list-row"><span>Premium Rice 50kg</span><span class="dots"></span><span class="num">128</span></div>
-          <div class="list-row"><span>Well Milled Rice 50kg</span><span class="dots"></span><span class="num">96</span></div>
-          <div class="list-row"><span>Regular Milled Rice 50kg</span><span class="dots"></span><span class="num">72</span></div>
-          <div class="list-row"><span>Dinorado 25kg</span><span class="dots"></span><span class="num">48</span></div>
-          <div class="list-row"><span>Jasmine Rice 25kg</span><span class="dots"></span><span class="num">36</span></div>
-          <a href="#" class="link">View Report</a>
-        </article>
-      </section>
+        <!-- INSTALLMENTS -->
+        <section class="view" id="view-installments">
+          <div class="view-head">
+            <h2 class="page-title">Installments</h2>
+            <button class="btn" id="toggleForm">+ Add Installment</button>
+          </div>
 
-      <!-- ===== INSTALLMENT TRACKER ===== -->
-      <section class="card">
-        <h3>Installment Tracker</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Juan Dela Cruz</td><td>Premium Rice 50kg</td><td>₱2,500</td><td>₱1,000</td><td>May 28, 2025</td>
-                <td><span class="status on-time">On Time</span></td>
-              </tr>
-              <tr>
-                <td>Maria Santos</td><td>Well Milled Rice 50kg</td><td>₱1,200</td><td>₱600</td><td>May 30, 2025</td>
-                <td><span class="seal pending"></span>Pending
-              </tr>
-              <tr>
-                <td>Pedro Reyes</td><td>Dinorado 25kg</td><td>₱900</td><td>₱0</td><td>May 21, 2025</td>
-                <td><span class="seal paid"></span>Paid
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <a href="#" class="link">View All Installments</a>
-      </section>
+          <form class="card form" id="installmentForm" hidden>
+            <h3 class="card-title">New Installment</h3>
+            <div class="form-grid">
+              <label>Customer<input name="customer" required placeholder="Customer name" /></label>
+              <label>Item
+                <select name="item">
+                  <option>Premium Rice 50kg</option>
+                  <option>Well Milled Rice 50kg</option>
+                  <option>Regular Milled Rice 50kg</option>
+                  <option>Dinorado 25kg</option>
+                  <option>Jasmine Rice 25kg</option>
+                </select>
+              </label>
+              <label>Due Date<input name="due" type="date" required /></label>
+              <label>Total Amount (₱)<input name="total" type="number" min="0" step="any" required /></label>
+              <label>Remaining Balance (₱)<input name="balance" type="number" min="0" step="any" required /></label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn">Save Installment</button>
+              <button type="button" class="btn ghost" id="cancelForm">Cancel</button>
+            </div>
+          </form>
 
-      <!-- ===== RECENT SALES ===== -->
-      <section class="card">
-        <h3>Recent Sales</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Kilo</th><th>Amount</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>May 21, 2025</td><td>INV-0001</td><td>Juan Dela Cruz</td><td>Premium Rice 50kg</td><td>25</td><td>₱ 1,250</td></tr>
-              <tr><td>May 21, 2025</td><td>INV-0002</td><td>Maria Santos</td><td>Well Milled Rice 50kg</td><td>10</td><td>₱ 520</td></tr>
-              <tr><td>May 21, 2025</td><td>INV-0003</td><td>Pedro Reyes</td><td>Regular Milled Rice 50kg</td><td>15</td><td>₱ 750</td></tr>
-              <tr><td>May 21, 2025</td><td>INV-0004</td><td>Ana Lopez</td><td>Dinorado 25kg</td><td>25</td><td>₱ 900</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Due Date</th><th>Status</th></tr>
+                </thead>
+                <tbody id="allInstallments"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PLACEHOLDER -->
+        <section class="view" id="view-placeholder">
+          <div class="card placeholder">
+            <h2 id="placeholderTitle">Module</h2>
+            <p>This module is coming soon. Connect it to your database or Google Sheet when ready.</p>
+          </div>
+        </section>
+
+      </div>
     </main>
   </div>
-</div>
-<script src="js/app.js"></script>
+
+  <script src="app.js"></script>
 </body>
 </html>
