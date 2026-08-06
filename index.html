@@ -143,9 +143,8 @@
               </div>
             </div>
             <div class="stat">
-              <span class="stat-label">Total Kilo in Stock</span>
-              <strong class="stat-value" id="statKilos">0</strong>
-              <span class="stat-unit">Kilo</span>
+              <span class="stat-label">Total Amount of Purchase</span>
+              <strong class="stat-value" id="statPurchase">₱ 0</strong>
             </div>
             <div class="stat">
               <span class="stat-label">Today's Sales</span>
@@ -418,10 +417,8 @@
       const sold = sales.filter(s => s.item === item).reduce((s, x) => s + x.sacks, 0);
       return rec - sold;
     }
-    function availableKilos(item){
-      const rec = stockEntries.filter(e => e.item === item).reduce((s, e) => s + e.sacks * e.kilo, 0);
-      const soldK = sales.filter(s => s.item === item).reduce((s, x) => s + x.kilo, 0);
-      return rec - soldK;
+    function totalPurchase(){
+      return stockEntries.reduce((s, e) => s + e.sacks * e.price, 0);
     }
     function nextInvoice(){
       let max = 0;
@@ -476,10 +473,10 @@
 
     // ---------- Dashboard ----------
     function renderDashboard(){
-      let totSacks = 0, totKilos = 0;
-      RICE.forEach(n => { totSacks += Math.max(0, availableSacks(n)); totKilos += Math.max(0, availableKilos(n)); });
+      let totSacks = 0;
+      RICE.forEach(n => { totSacks += Math.max(0, availableSacks(n)); });
       setText('statSacks', totSacks.toLocaleString());
-      setText('statKilos', totKilos.toLocaleString());
+      setText('statPurchase', peso(totalPurchase()));
 
       const today = todayISO();
       let ts = 0, tp = 0;
