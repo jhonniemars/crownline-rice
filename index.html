@@ -68,9 +68,11 @@
     .status { font-weight:700; }
     .status.on-time { color:var(--green); }
     .seal { display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:6px; vertical-align:-2px; }
-    .seal.pending { background:#7a5a48; }
     .seal.paid { background:var(--green); }
     .seal.overdue { background:#b3402f; }
+    .tag { font-weight:700; font-size:12px; padding:3px 8px; border-radius:999px; }
+    .tag.cash { background:#e8f5e9; color:#1b5e20; }
+    .tag.credit { background:#efe4d7; color:#7a5a48; }
 
     .btn { background:var(--green); color:#fff; border:none; border-radius:8px; padding:10px 16px; font:inherit; font-weight:700; cursor:pointer; }
     .btn:hover { background:#256428; }
@@ -78,6 +80,10 @@
     .btn.danger { background:#b3402f; }
     .btn.danger:hover { background:#8f3225; }
     .btn.small { padding:6px 10px; font-size:13px; border-radius:6px; }
+    .basis-wrap { display:flex; gap:8px; }
+    .basis-btn { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .basis-btn:hover { background:#eee8da; }
+    .basis-btn.active { background:var(--green); color:#fff; border-color:var(--green); }
     .form-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
     .form-grid label { display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:14px; }
     .form-grid input, .form-grid select { font:inherit; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
@@ -169,7 +175,7 @@
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Payments</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Amount</th><th>Basis</th><th>Purchase Date</th><th>Due Date</th><th>Balance</th><th>Payments</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="dashInstallments"></tbody>
               </table>
@@ -293,28 +299,35 @@
           <form class="card form" id="installmentForm" hidden>
             <h3 class="card-title">New Installment</h3>
             <div class="form-grid">
-              <label>Customer<input name="customer" required placeholder="Customer name" /></label>
+              <label>Customer Name<input name="customer" required placeholder="Customer name" /></label>
               <label>Item
                 <select name="item">
                   <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
                   <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
                 </select>
               </label>
-              <label>Due Date<input name="due" type="date" required /></label>
-              <label>Total Amount (₱)<input name="total" type="number" min="0" step="any" required /></label>
-              <label>Remaining Balance (₱)<input name="balance" type="number" min="0" step="any" required /></label>
+              <label>Amount of Item (₱)<input name="total" type="number" min="0" step="any" required placeholder="e.g. 2500" /></label>
+              <label>Date of Purchase / Deliver<input name="pdate" type="date" required /></label>
+              <label>Due Date<input name="due" type="date" /></label>
+              <label>Basis of Purchase
+                <span class="basis-wrap">
+                  <button type="button" class="btn small basis-btn" data-basis="cash">Cash</button>
+                  <button type="button" class="btn small basis-btn active" data-basis="credit">Credit</button>
+                </span>
+              </label>
             </div>
             <div class="form-actions">
               <button type="submit" class="btn">Save Installment</button>
               <button type="button" class="btn ghost" id="cancelForm">Cancel</button>
             </div>
+            <p class="hint">Cash = marked Fully Paid automatically. Credit = balance starts at the full amount; record the 1st, 2nd… payments with the Payment button.</p>
           </form>
 
           <div class="card">
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Total Amount</th><th>Balance</th><th>Payments</th><th>Due Date</th><th>Status</th><th>Action</th></tr>
+                  <tr><th>Customer</th><th>Item</th><th>Amount</th><th>Basis</th><th>Purchase Date</th><th>Due Date</th><th>Balance</th><th>Payments</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody id="allInstallments"></tbody>
               </table>
@@ -350,7 +363,7 @@
     }
 
     const peso = n => '₱' + Number(n).toLocaleString('en-PH');
-    const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
     const setText = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); return el; };
@@ -428,7 +441,7 @@
     // ---------- Installments ----------
     function instStatus(i){
       if (i.balance <= 0) return 'paid';
-      if (i.due < todayISO()) return 'overdue';
+      if (i.due && i.due < todayISO()) return 'overdue';
       return 'ontime';
     }
     function instRow(i, idx){
@@ -436,13 +449,14 @@
       const stCell = st === 'paid' ? '<span class="seal paid"></span>Fully Paid'
         : st === 'overdue' ? '<span class="seal overdue"></span>Overdue'
         : '<span class="status on-time">On Time</span>';
+      const basisCell = (i.basis === 'cash') ? '<span class="tag cash">Cash</span>' : '<span class="tag credit">Credit</span>';
       const pays = (i.payments || []).length;
       const rowClass = st === 'paid' ? ' class="row-paid"' : '';
-      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + i.item + '</td><td>' + peso(i.total) + '</td><td>' + peso(i.balance) + '</td><td>' + pays + '</td><td>' + fmtDate(i.due) + '</td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button> <button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>';
+      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + i.item + '</td><td>' + peso(i.total) + '</td><td>' + basisCell + '</td><td>' + fmtDate(i.pdate) + '</td><td>' + fmtDate(i.due) + '</td><td>' + peso(i.balance) + '</td><td>' + pays + '</td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button> <button class="btn small danger" data-del-inst="' + idx + '">Delete</button></td></tr>';
     }
     function renderInstallments(){
       const html = installments.length ? installments.map(instRow).join('')
-        : '<tr><td colspan="8" class="empty">No installments recorded yet.</td></tr>';
+        : '<tr><td colspan="10" class="empty">No installments recorded yet.</td></tr>';
       const a = document.getElementById('dashInstallments');
       const b = document.getElementById('allInstallments');
       if (a) a.innerHTML = html;
@@ -539,16 +553,35 @@
       e.target.reset(); e.target.hidden = true;
     });
 
-    // ---------- Installment form ----------
-    on('toggleForm', 'click', () => { const f = document.getElementById('installmentForm'); if (f) f.hidden = !f.hidden; });
+    // ---------- Installment form (Cash / Credit) ----------
+    let currentBasis = 'credit';
+    document.querySelectorAll('.basis-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        currentBasis = b.dataset.basis;
+        document.querySelectorAll('.basis-btn').forEach(x => x.classList.toggle('active', x === b));
+      });
+    });
+
+    on('toggleForm', 'click', () => {
+      const f = document.getElementById('installmentForm');
+      if (f) {
+        f.hidden = !f.hidden;
+        if (!f.hidden) { const pd = f.querySelector('[name="pdate"]'); if (pd && !pd.value) pd.value = todayISO(); }
+      }
+    });
     on('cancelForm', 'click', () => { const f = document.getElementById('installmentForm'); if (f) f.hidden = true; });
     on('installmentForm', 'submit', e => {
       e.preventDefault();
       const f = new FormData(e.target);
+      const total = Math.max(0, Number(f.get('total')));
+      const due = f.get('due');
+      if (currentBasis === 'credit' && !due) { alert('Please set the Due Date for credit purchases.'); return; }
+      const pdate = f.get('pdate') || todayISO();
       installments.unshift({
-        customer: f.get('customer'), item: f.get('item'),
-        total: Number(f.get('total')), balance: Number(f.get('balance')),
-        due: f.get('due'), payments: []
+        customer: f.get('customer'), item: f.get('item'), total,
+        pdate, due: due || '', basis: currentBasis,
+        balance: currentBasis === 'cash' ? 0 : total,
+        payments: currentBasis === 'cash' ? [{ date: pdate, amount: total }] : []
       });
       save(); renderAll();
       e.target.reset(); e.target.hidden = true;
