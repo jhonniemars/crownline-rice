@@ -1,18 +1,14 @@
-// ---------- Catalog: kilos per sack ----------
-const ITEM_KILO = {
-  'Premium Rice 50kg': 50, 'Well Milled Rice 50kg': 50, 'Regular Milled Rice 50kg': 50,
-  'Dinorado 25kg': 25, 'Jasmine Rice 25kg': 25
-};
-const ITEMS = Object.keys(ITEM_KILO);
+// ---------- Rice catalog ----------
+const RICE = ['Alas', 'Princess Bea', 'Young Chow', 'Salo-Salo', 'Planters', 'Japonica'];
 
 // ---------- Data (auto-saved in this browser) ----------
-let stockEntries = [];   // { item, sacks, price }
+let stockEntries = [];   // { item, kilo, sacks, price }
 let installments = [];   // { customer, item, total, balance, due, status }
 
-function save(){ localStorage.setItem('ghrt-data-v2', JSON.stringify({ stockEntries, installments })); }
+function save(){ localStorage.setItem('ghrt-data-v3', JSON.stringify({ stockEntries, installments })); }
 function load(){
   try {
-    const d = JSON.parse(localStorage.getItem('ghrt-data-v2') || 'null');
+    const d = JSON.parse(localStorage.getItem('ghrt-data-v3') || 'null');
     if (d) { stockEntries = d.stockEntries || []; installments = d.installments || []; }
   } catch (e) {}
 }
@@ -25,16 +21,16 @@ const setText = (id, t) => { const el = document.getElementById(id); if (el) el.
 function renderDashboard(){
   let sacks = 0, kilos = 0;
   const perItem = {};
-  ITEMS.forEach(n => perItem[n] = 0);
+  RICE.forEach(n => perItem[n] = 0);
   stockEntries.forEach(e => {
     sacks += e.sacks;
-    kilos += e.sacks * (ITEM_KILO[e.item] || 0);
+    kilos += e.sacks * e.kilo;
     perItem[e.item] = (perItem[e.item] || 0) + e.sacks;
   });
   setText('statSacks', sacks.toLocaleString());
   setText('statKilos', kilos.toLocaleString());
   const list = document.getElementById('stockSummaryList');
-  if (list) list.innerHTML = ITEMS
+  if (list) list.innerHTML = RICE
     .map(n => `<li><span>${n}</span><i class="dots"></i><strong>${perItem[n]}</strong></li>`).join('');
 }
 
@@ -43,10 +39,9 @@ function renderStock(){
   const body = document.getElementById('stockTableBody');
   if (!body) return;
   body.innerHTML = stockEntries.length
-    ? stockEntries.map(e => {
-        const k = ITEM_KILO[e.item] || 0;
-        return `<tr><td>${e.item}</td><td>${k} kg</td><td>${e.sacks}</td><td>${(e.sacks * k).toLocaleString()}</td><td>${peso(e.price)}</td><td><strong>${peso(e.sacks * e.price)}</strong></td></tr>`;
-      }).join('')
+    ? stockEntries.map(e =>
+        `<tr><td>${e.item}</td><td>${e.kilo} kg</td><td>${e.sacks}</td><td>${(e.sacks * e.kilo).toLocaleString()}</td><td>${peso(e.price)}</td><td><strong>${peso(e.sacks * e.price)}</strong></td></tr>`
+      ).join('')
     : '<tr><td colspan="6" class="empty">No stock encoded yet. Click "+ Add Stock Entry".</td></tr>';
 }
 
@@ -99,6 +94,7 @@ stockForm.addEventListener('submit', e => {
   const f = new FormData(stockForm);
   stockEntries.unshift({
     item: f.get('item'),
+    kilo: Math.max(1, Number(f.get('kilo'))),
     sacks: Math.max(1, Math.floor(Number(f.get('sacks')))),
     price: Math.max(0, Number(f.get('price')))
   });
