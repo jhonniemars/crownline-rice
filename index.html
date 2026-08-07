@@ -111,7 +111,6 @@
         <a href="#" class="nav-link" data-view="sales" data-label="Sales">Sales</a>
         <a href="#" class="nav-link" data-view="customers" data-label="Customers">Customers</a>
         <a href="#" class="nav-link" data-view="installments" data-label="Installments">Installments</a>
-        <a href="#" class="nav-link" data-view="utang" data-label="Utang / Balance">Utang / Balance</a>
         <a href="#" class="nav-link" data-view="suppliers" data-label="Suppliers">Suppliers</a>
         <a href="#" class="nav-link" data-view="delivery" data-label="Delivery">Delivery</a>
         <a href="#" class="nav-link" data-view="reports" data-label="Reports">Reports</a>
@@ -382,41 +381,6 @@
           </div>
         </section>
 
-        <!-- UTANG / BALANCE -->
-        <section class="view" id="view-utang">
-          <div class="view-head">
-            <h2 class="page-title">Utang / Balance</h2>
-            <button class="btn ghost" id="toggleUtangPaid">Show Fully Paid</button>
-          </div>
-
-          <div class="stats three">
-            <div class="stat">
-              <span class="stat-label">Total Utang (Receivable)</span>
-              <strong class="stat-value" id="statUtang">₱ 0</strong>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Overdue Amount</span>
-              <strong class="stat-value" id="statOverdue">₱ 0</strong>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Customers with Balance</span>
-              <strong class="stat-value" id="statDebtors">0</strong>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="table-wrap">
-              <table class="table">
-                <thead>
-                  <tr><th>Customer</th><th>Item</th><th>Purchase Date</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr>
-                </thead>
-                <tbody id="utangTableBody"></tbody>
-              </table>
-            </div>
-            <p class="hint">Only unpaid balances are shown by default. Overdue rows are highlighted red; use the Payment button to record the 1st, 2nd… payments.</p>
-          </div>
-        </section>
-
         <!-- PLACEHOLDER -->
         <section class="view" id="view-placeholder">
           <div class="card placeholder">
@@ -613,42 +577,7 @@
       if (b) b.innerHTML = html;
     }
 
-    // ---------- Utang / Balance ----------
-    let utangShowPaid = false;
-    function utangRow(i, idx){
-      const st = instStatus(i);
-      const stCell = st === 'paid' ? '<span class="seal paid"></span>Fully Paid'
-        : st === 'overdue' ? '<span class="seal overdue"></span>Overdue'
-        : '<span class="seal pending"></span>Pending';
-      const paid = Math.max(0, i.total - i.balance);
-      const rowClass = st === 'overdue' ? ' class="row-overdue"' : (st === 'paid' ? ' class="row-paid"' : '');
-      return '<tr' + rowClass + '><td>' + i.customer + '</td><td>' + itemLabel(i) + '</td><td>' + fmtDate(i.pdate) + '</td><td>' + fmtDate(i.due) + '</td><td>' + peso(i.total) + '</td><td>' + peso(paid) + '</td><td><strong>' + peso(i.balance) + '</strong></td><td>' + stCell + '</td><td><button class="btn small" data-pay-inst="' + idx + '">Payment</button></td></tr>';
-    }
-    function renderUtang(){
-      const rows = [];
-      installments.forEach((i, idx) => {
-        if (!utangShowPaid && i.balance <= 0) return;
-        rows.push(utangRow(i, idx));
-      });
-      const body = document.getElementById('utangTableBody');
-      if (body) body.innerHTML = rows.length ? rows.join('')
-        : '<tr><td colspan="9" class="empty">' + (utangShowPaid ? 'No installments recorded yet.' : 'No unpaid balances. 🎉') + '</td></tr>';
-
-      let tot = 0, od = 0;
-      const debtors = new Set();
-      installments.forEach(i => {
-        if (i.balance > 0) {
-          tot += i.balance;
-          debtors.add(i.customer);
-          if (i.due && i.due < todayISO()) od += i.balance;
-        }
-      });
-      setText('statUtang', peso(tot));
-      setText('statOverdue', peso(od));
-      setText('statDebtors', debtors.size.toLocaleString());
-    }
-
-    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); renderCustomers(); renderUtang(); }
+    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); renderCustomers(); }
 
     // ---------- Row action buttons ----------
     document.addEventListener('click', e => {
@@ -683,17 +612,11 @@
     });
 
     on('showAllHistory', 'click', () => { selectedCustomer = null; renderCustomers(); });
-    on('toggleUtangPaid', 'click', () => {
-      utangShowPaid = !utangShowPaid;
-      const b = document.getElementById('toggleUtangPaid');
-      if (b) b.textContent = utangShowPaid ? 'Hide Fully Paid' : 'Show Fully Paid';
-      renderUtang();
-    });
 
     // ---------- View switching ----------
     function showView(name, label){
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', customers:'view-customers', installments:'view-installments', utang:'view-utang' };
+      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', customers:'view-customers', installments:'view-installments' };
       if (map[name]) document.getElementById(map[name]).classList.add('active');
       else { setText('placeholderTitle', label || 'Module'); document.getElementById('view-placeholder').classList.add('active'); }
     }
