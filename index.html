@@ -452,6 +452,21 @@
       });
       if (img.complete && img.naturalWidth === 0) img.src = candidates[0];
     })();
+        // ---------- Sidebar photo loader: tries uploaded files ----------
+    (function(){
+      const sb = document.querySelector('.sidebar');
+      if (!sb) return;
+      const candidates = ['sidebar.jpg','sidebar.jpeg','sidebar.png','sidebar.webp','grain.jpg','grain.png'];
+      const overlay = 'linear-gradient(rgba(26,15,8,.78), rgba(26,15,8,.78))';
+      let i = 0;
+      (function tryNext(){
+        if (i >= candidates.length) return;               // keep brown fallback
+        const t = new Image();
+        t.onload = function(){ sb.style.backgroundImage = overlay + ", url('" + candidates[i] + "')"; };
+        t.onerror = function(){ i++; tryNext(); };
+        t.src = candidates[i];
+      })();
+    })();
 
     // ---------- Rice catalog ----------
     const RICE = ['Alas', 'Princess Bea', 'Young Chow', 'Salo-Salo', 'Planters', 'Japonica'];
