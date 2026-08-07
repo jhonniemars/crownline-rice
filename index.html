@@ -35,6 +35,7 @@
 
     .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:18px; }
     .stats.three { grid-template-columns:repeat(3,1fr); }
+    .stats.four { grid-template-columns:repeat(4,1fr); }
     .stat { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; display:flex; flex-direction:column; gap:6px; }
     .stat-label { font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
     .stat-value { font-size:30px; font-weight:700; line-height:1.1; }
@@ -95,9 +96,9 @@
     .placeholder h2 { margin-bottom:8px; }
     .placeholder p { color:#666; }
 
-    @media (max-width:1400px){ .stats{grid-template-columns:repeat(3,1fr);} }
+    @media (max-width:1400px){ .stats{grid-template-columns:repeat(3,1fr);} .stats.four{grid-template-columns:repeat(2,1fr);} }
     @media (max-width:1100px){ .stats{grid-template-columns:repeat(2,1fr);} .stats.three{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;} .form-grid{grid-template-columns:repeat(2,1fr);} }
-    @media (max-width:760px){ .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:static; padding:16px;} .nav{flex-direction:row; flex-wrap:wrap;} .stats{grid-template-columns:1fr;} .content{padding:18px;} .form-grid{grid-template-columns:1fr;} }
+    @media (max-width:760px){ .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:static; padding:16px;} .nav{flex-direction:row; flex-wrap:wrap;} .stats{grid-template-columns:1fr;} .stats.four{grid-template-columns:1fr;} .content{padding:18px;} .form-grid{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -113,7 +114,6 @@
         <a href="#" class="nav-link" data-view="suppliers" data-label="Suppliers">Suppliers</a>
         <a href="#" class="nav-link" data-view="delivery" data-label="Delivery">Delivery</a>
         <a href="#" class="nav-link" data-view="reports" data-label="Reports">Reports</a>
-        <a href="#" class="nav-link" data-view="settings" data-label="Settings">Settings</a>
       </nav>
     </aside>
 
@@ -208,7 +208,6 @@
           </div>
 
           <form class="card form" id="stockForm" hidden>
-            <h3 class="card-title">New Stock Entry</h3>
             <div class="form-grid">
               <label>Name of Rice
                 <select name="item">
@@ -255,7 +254,6 @@
           </div>
 
           <form class="card form" id="saleForm" hidden>
-            <h3 class="card-title">New Sale</h3>
             <div class="form-grid">
               <label>Customer<input name="customer" required placeholder="Customer name" /></label>
               <label>Item
@@ -263,6 +261,9 @@
                   <option>Alas</option><option>Princess Bea</option><option>Young Chow</option>
                   <option>Salo-Salo</option><option>Planters</option><option>Japonica</option>
                 </select>
+              </label>
+              <label>Kilos of Sack
+                <input name="kilo" type="number" min="1" step="any" placeholder="auto from stock" />
               </label>
               <label>Quantity (Sack)
                 <input name="sacks" type="number" min="0.5" step="0.5" required placeholder="e.g. 1" />
@@ -275,7 +276,7 @@
               <button type="submit" class="btn">Save Sale</button>
               <button type="button" class="btn ghost" id="cancelSaleForm">Cancel</button>
             </div>
-            <p class="hint">Kilos per sack and cost are taken automatically from the latest stock entry of the item. Profit = (selling price − cost) × quantity. Stock is deducted automatically.</p>
+            <p class="hint">Kilos per sack is auto‑taken from the latest stock entry unless you type it here. Profit = (selling price − cost) × quantity. Stock is deducted automatically.</p>
           </form>
 
           <div class="card">
@@ -300,11 +301,10 @@
           </div>
 
           <div class="card">
-            <h3 class="card-title">Customer List</h3>
             <div class="table-wrap">
               <table class="table">
                 <thead>
-                  <tr><th>Customer</th><th>Purchases</th><th>Total Bought</th><th>Balance (Utang)</th><th>Action</th></tr>
+                  <tr><th>Customer</th><th>Purchases</th><th>Total Bought</th><th>Balance</th><th>Action</th></tr>
                 </thead>
                 <tbody id="customerListBody"></tbody>
               </table>
@@ -380,7 +380,46 @@
           </div>
         </section>
 
-        <!-- PLACEHOLDER -->
+        <!-- REPORTS -->
+        <section class="view" id="view-reports">
+          <div class="view-head">
+            <h2 class="page-title">Reports</h2>
+            <div class="basis-wrap" id="reportPeriods">
+              <button type="button" class="btn small basis-btn active" data-period="daily">Daily</button>
+              <button type="button" class="btn small basis-btn" data-period="weekly">Weekly</button>
+              <button type="button" class="btn small basis-btn" data-period="monthly">Monthly</button>
+              <button type="button" class="btn small basis-btn" data-period="yearly">Yearly</button>
+            </div>
+          </div>
+
+          <div class="stats four" id="reportStats"></div>
+
+          <div class="card">
+            <h3 class="card-title">Sales in Period</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Date</th><th>Invoice No.</th><th>Customer</th><th>Item</th><th>Sacks</th><th>Amount</th><th>Profit</th></tr>
+                </thead>
+                <tbody id="reportSalesBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Payments Collected in Period</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Date</th><th>Customer</th><th>Amount</th></tr>
+                </thead>
+                <tbody id="reportPaymentsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PLACEHOLDER (Suppliers / Delivery) -->
         <section class="view" id="view-placeholder">
           <div class="card placeholder">
             <h2 id="placeholderTitle">Module</h2>
@@ -421,19 +460,13 @@
     const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); return el; };
     const itemLabel = r => r.item + ((r.sacks || 0) > 0 ? ' (' + r.sacks + ' × ' + (r.kilo || 0) + 'kg)' : '');
 
-    // ---------- Stock math (Sales + Installments both deduct stock) ----------
+    // ---------- Stock math ----------
     const latestEntry = item => stockEntries.find(e => e.item === item);
     function availableSacks(item){
       const rec = stockEntries.filter(e => e.item === item).reduce((s, e) => s + e.sacks, 0);
       const sold = sales.filter(s => s.item === item).reduce((s, x) => s + x.sacks, 0);
       const delivered = installments.filter(i => i.item === item).reduce((s, i) => s + (i.sacks || 0), 0);
       return rec - sold - delivered;
-    }
-    function availableKilos(item){
-      const rec = stockEntries.filter(e => e.item === item).reduce((s, e) => s + e.sacks * e.kilo, 0);
-      const soldK = sales.filter(s => s.item === item).reduce((s, x) => s + x.kilo, 0);
-      const delK = installments.filter(i => i.item === item).reduce((s, i) => s + (i.sacks || 0) * (i.kilo || 0), 0);
-      return rec - soldK - delK;
     }
     function totalPurchase(){
       return stockEntries.reduce((s, e) => s + e.sacks * e.price, 0);
@@ -461,7 +494,55 @@
       return 'INV-' + String(max + 1).padStart(4, '0');
     }
 
-    // ---------- Customers (auto-derived) ----------
+    // ---------- Reports (daily / weekly / monthly / yearly) ----------
+    let currentPeriod = 'daily';
+    const isoLocal = dt => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+    function periodStart(p){
+      const now = new Date();
+      if (p === 'daily') return isoLocal(now);
+      if (p === 'weekly') { const d = new Date(now); d.setDate(d.getDate() - 6); return isoLocal(d); }
+      if (p === 'monthly') return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+      return now.getFullYear() + '-01-01';
+    }
+    const inPeriod = (dateStr, start) => dateStr && dateStr >= start && dateStr <= todayISO();
+
+    function renderReports(){
+      const start = periodStart(currentPeriod);
+      let sAmt = 0, sProfit = 0, sSacks = 0;
+      const sRows = [];
+      sales.forEach(s => {
+        if (inPeriod(s.date, start)) {
+          sAmt += s.amount; sProfit += (s.profit || 0); sSacks += s.sacks; sRows.push(s);
+        }
+      });
+      let coll = 0;
+      const pRows = [];
+      installments.forEach(i => {
+        (i.payments || []).forEach(p => {
+          if (inPeriod(p.date, start)) { coll += p.amount; pRows.push({ date:p.date, customer:i.customer, amount:p.amount });
+          }
+        });
+      });
+
+      const stats = document.getElementById('reportStats');
+      if (stats) stats.innerHTML =
+        '<div class="stat"><span class="stat-label">Total Sales</span><strong class="stat-value">' + peso(sAmt) + '</strong></div>' +
+        '<div class="stat"><span class="stat-label">Total Profit</span><strong class="stat-value">' + peso(Math.round(sProfit)) + '</strong></div>' +
+        '<div class="stat"><span class="stat-label">Sacks Sold</span><strong class="stat-value">' + sSacks.toLocaleString() + '</strong></div>' +
+        '<div class="stat"><span class="stat-label">Payments Collected</span><strong class="stat-value">' + peso(coll) + '</strong></div>';
+
+      const sb = document.getElementById('reportSalesBody');
+      if (sb) sb.innerHTML = sRows.length
+        ? sRows.map(s => '<tr><td>' + fmtDate(s.date) + '</td><td>' + s.invoice + '</td><td>' + s.customer + '</td><td>' + itemLabel(s) + '</td><td>' + s.sacks + '</td><td>' + peso(s.amount) + '</td><td>' + peso(s.profit || 0) + '</td></tr>').join('')
+        : '<tr><td colspan="7" class="empty">No sales in this period.</td></tr>';
+
+      const pb = document.getElementById('reportPaymentsBody');
+      if (pb) pb.innerHTML = pRows.length
+        ? pRows.map(r => '<tr><td>' + fmtDate(r.date) + '</td><td>' + r.customer + '</td><td>' + peso(r.amount) + '</td></tr>').join('')
+        : '<tr><td colspan="3" class="empty">No payments collected in this period.</td></tr>';
+    }
+
+    // ---------- Customers ----------
     function customerList(){
       const m = {};
       const add = name => {
@@ -583,7 +664,7 @@
       if (b) b.innerHTML = html;
     }
 
-    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); renderCustomers(); }
+    function renderAll(){ renderDashboard(); renderStock(); renderSales(); renderInstallments(); renderCustomers(); renderReports(); }
 
     // ---------- Row action buttons ----------
     document.addEventListener('click', e => {
@@ -619,10 +700,19 @@
 
     on('showAllHistory', 'click', () => { selectedCustomer = null; renderCustomers(); });
 
+    // ---------- Report period buttons ----------
+    document.querySelectorAll('[data-period]').forEach(b => {
+      b.addEventListener('click', () => {
+        currentPeriod = b.dataset.period;
+        document.querySelectorAll('[data-period]').forEach(x => x.classList.toggle('active', x === b));
+        renderReports();
+      });
+    });
+
     // ---------- View switching ----------
     function showView(name, label){
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', customers:'view-customers', installments:'view-installments' };
+      const map = { dashboard:'view-dashboard', stock:'view-stock', sales:'view-sales', customers:'view-customers', installments:'view-installments', reports:'view-reports' };
       if (map[name]) document.getElementById(map[name]).classList.add('active');
       else { setText('placeholderTitle', label || 'Module'); document.getElementById('view-placeholder').classList.add('active'); }
     }
@@ -669,9 +759,10 @@
       const ent = latestEntry(item);
       if (!ent) { alert('No stock entry for "' + item + '" yet. Add stock first.'); return; }
       if (sacks > availableSacks(item)) { alert('Not enough stock for "' + item + '". Available: ' + availableSacks(item) + ' sack(s).'); return; }
+      const kiloPer = Math.max(0, Number(f.get('kilo')) || 0) || ent.kilo;
       sales.unshift({
         date: todayISO(), invoice: nextInvoice(), customer: f.get('customer').trim(),
-        item, sacks, kilo: sacks * ent.kilo, price,
+        item, sacks, kilo: sacks * kiloPer, price,
         amount: sacks * price, profit: (price - ent.price) * sacks
       });
       save(); renderAll();
@@ -680,10 +771,10 @@
 
     // ---------- Installment form ----------
     let currentBasis = 'credit';
-    document.querySelectorAll('.basis-btn').forEach(b => {
+    document.querySelectorAll('.basis-btn[data-basis]').forEach(b => {
       b.addEventListener('click', () => {
         currentBasis = b.dataset.basis;
-        document.querySelectorAll('.basis-btn').forEach(x => x.classList.toggle('active', x === b));
+        document.querySelectorAll('.basis-btn[data-basis]').forEach(x => x.classList.toggle('active', x === b));
       });
     });
 
