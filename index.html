@@ -25,7 +25,6 @@
     .main { flex:1; min-width:0; display:flex; flex-direction:column; }
     .topbar { background:var(--topbar); border-bottom:1px solid var(--border); padding:12px 28px; display:flex; justify-content:flex-end; align-items:center; }
     .admin { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; }
-    .avatar { width:26px; height:26px; border-radius:50%; background:#8a8177; }
     .logo { width:40px; height:40px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:var(--shadow); }
 
     .content { padding:26px 32px; }
@@ -107,7 +106,7 @@
     <aside class="sidebar">
       <nav class="nav">
         <a href="#" class="nav-link active" data-view="dashboard" data-label="Dashboard">Dashboard</a>
-        <a href="#" class="nav-link" data-view="stock" data-label="Stock / Inventory">Stock / Inventory</a>
+        <a href="#" class="nav-link" data-view="stock" data-label="Inventory">Inventory</a>
         <a href="#" class="nav-link" data-view="sales" data-label="Sales">Sales</a>
         <a href="#" class="nav-link" data-view="customers" data-label="Customers">Customers</a>
         <a href="#" class="nav-link" data-view="installments" data-label="Installments">Installments</a>
@@ -121,7 +120,7 @@
     <main class="main">
       <header class="topbar">
         <div class="admin">
-          <img class="logo" src="logo.png" alt="Crownline Rice Supply logo" onerror="this.style.display='none'" />
+          <img class="logo" id="brandLogo" src="logo.png" alt="Crownline Rice Supply logo" />
           Crownline Rice Supply
         </div>
       </header>
@@ -201,10 +200,10 @@
           </div>
         </section>
 
-        <!-- STOCK / INVENTORY -->
+        <!-- INVENTORY -->
         <section class="view" id="view-stock">
           <div class="view-head">
-            <h2 class="page-title">Stock / Inventory</h2>
+            <h2 class="page-title">Inventory</h2>
             <button class="btn" id="toggleStockForm">+ Add Stock Entry</button>
           </div>
 
@@ -394,6 +393,13 @@
   </div>
 
   <script>
+    // ---------- Logo fallback (gold crown) if logo.png is not uploaded yet ----------
+    (function(){
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='#f6f0e2' stroke='#c9a24b' stroke-width='4'/><path d='M14 40L18 24L26 34L32 20L38 34L46 24L50 40Z' fill='#c9a24b'/><rect x='14' y='40' width='36' height='6' rx='2' fill='#c9a24b'/></svg>";
+      const img = document.getElementById('brandLogo');
+      if (img) img.addEventListener('error', function(){ img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); }, { once:true });
+    })();
+
     // ---------- Rice catalog ----------
     const RICE = ['Alas', 'Princess Bea', 'Young Chow', 'Salo-Salo', 'Planters', 'Japonica'];
 
