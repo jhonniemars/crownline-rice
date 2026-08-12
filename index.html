@@ -154,13 +154,19 @@ const firebaseConfig = {
   projectId: "crownline-rice",
   appId: "1:277225018145:web:6792bef1dc04a8e9bde460"
 };
-firebase.initializeApp(firebaseConfig);
+
+// Initialize safely (prevents errors if loaded twice)
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const dbRef = db.ref('tracker/ghrt-data-v4');
 
-/* Your app saves EVERYTHING under this one key */
-const DATA_KEY = "ghrt-data-v4";
+// Safe storage wrapper (prevents crashes in Safari Private / Incognito)
+const safeStorage = {
+  get: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} }
+};
 
-/* Compare data ignoring key order */
+// Helper to compare data fairly
 function norm(v) {
   if (Array.isArray(v)) return v.map(norm);
   if (v && typeof v === "object")
@@ -168,60 +174,52 @@ function norm(v) {
   return v;
 }
 
-/* 1) AUTO-PUSH: every time your app saves locally, push to the cloud */
-const originalSetItem = localStorage.setItem.bind(localStorage);
-localStorage.setItem = function (key, value) {
-  originalSetItem(key, value);
-  if (key === DATA_KEY) {
-    try { db.ref("tracker/" + DATA_KEY).set(JSON.parse(value)); } catch (e) {}
+// 1. AUTO-PUSH: Hijacks your app's native save() to push to the cloud
+const hookInterval = setInterval(() => {
+  if (typeof window.save === 'function' && !window.save._hooked) {
+    clearInterval(hookInterval);
+    const originalSave = window.save;
+    window.save = function() {
+      originalSave(); // Run your app's normal save
+      try { dbRef.set({ stockEntries, sales, installments }); } catch(e) {}
+    };
+    window.save._hooked = true;
   }
-};
+}, 100);
 
-/* 2) AUTO-PULL: live update when ANY device changes data */
-db.ref("tracker/" + DATA_KEY).on("value", (snap) => {
+// 2. AUTO-PULL: Listens for changes from ANY browser/device live
+dbRef.on('value', (snap) => {
   const cloud = snap.val();
-  const localRaw = localStorage.getItem(DATA_KEY);
+  const localRaw = safeStorage.get('ghrt-data-v4');
+  let local = null;
+  try { local = JSON.parse(localRaw); } catch(e) {}
 
-  // Cloud empty? The FIRST device to open seeds it (whichever comes first)
-  if (cloud === null) {
-    if (localRaw) db.ref("tracker/" + DATA_KEY).set(JSON.parse(localRaw));
+  // If cloud is empty, this browser is the "First One" -> seed the cloud
+  if (cloud === null && localRaw) {
+    try { dbRef.set(JSON.parse(localRaw)); } catch(e) {}
     return;
   }
 
-  const local = JSON.parse(localRaw || "null");
-  if (JSON.stringify(norm(cloud)) !== JSON.stringify(norm(local))) {
-    originalSetItem(DATA_KEY, JSON.stringify(cloud));
-    location.reload(); // show the new entries & dates immediately
+  // If cloud has data and it differs from local, update and reload UI
+  if (cloud && JSON.stringify(norm(cloud)) !== JSON.stringify(norm(local))) {
+    safeStorage.set('ghrt-data-v4', JSON.stringify(cloud));
+    location.reload();
+  }
+});
+
+// 3. INITIAL LOAD: If a new browser opens the site with no data, pull from cloud
+window.addEventListener('load', () => {
+  if (!safeStorage.get('ghrt-data-v4')) {
+    dbRef.once('value').then((s) => {
+      if (s.val()) {
+        safeStorage.set('ghrt-data-v4', JSON.stringify(s.val()));
+        location.reload();
+      }
+    });
   }
 });
 </script>
       
-// Save locally + push to cloud at the same time
-function syncSave(key, data) {
-  syncSave("sales", sales);
-  db.ref("tracker/" + key).set(data);
-}
-
-// Compare data ignoring key order
-function sortKeys(v) {
-  if (Array.isArray(v)) return v.map(sortKeys);
-  if (v && typeof v === "object")
-    return Object.keys(v).sort().reduce((o, k) => ((o[k] = sortKeys(v[k])), o), {});
-  return v;
-}
-
-// LIVE update when ANY device adds/changes data
-SYNC_KEYS.forEach((key) => {
-  db.ref("tracker/" + key).on("value", (snap) => {
-    const cloud = snap.val();
-    if (cloud === null) return;
-    const local = JSON.parse(localStorage.getItem(key) || "null");
-    if (JSON.stringify(sortKeys(cloud)) !== JSON.stringify(sortKeys(local))) {
-      syncSave("sales", sales);
-      location.reload();
-    }
-  });
-});
 </script>
 <!-- END OF STATUS BANNER -->
       <header class="topbar">
