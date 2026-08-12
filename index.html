@@ -126,12 +126,24 @@
 
     <main class="main">
       <!-- BUSINESS TRACKER STATUS BANNER -->
+<!-- BUSINESS TRACKER STATUS BANNER -->
 <div id="status-banner" style="padding: 15px; background-color: #d4edda; color: #155724; text-align: center; font-weight: bold; border: 1px solid #c3e6cb; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
-    Business Tracker: <span id="status-text" style="color: #28a745; font-size: 1.1em;">● OPEN</span> | 
-    Device: <span id="device-type">Detecting...</span> | 
+    Business Tracker: <span id="status-text" style="color: #28a745; font-size: 1.1em;">● OPEN</span> |
+    Device: <span id="device-type">Detecting...</span> |
     Opened at: <span id="current-time"></span>
 </div>
 
+<script>
+    function detectDeviceType() {
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+        return isMobile ? "Mobile 📱" : "PC / Desktop 💻";
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("device-type").innerText = detectDeviceType();
+        const now = new Date();
+        document.getElementById("current-time").innerText = now.toLocaleString();
+    });
 </script>
 
 <!-- Firebase SDK -->
@@ -161,7 +173,7 @@ function norm(v) {
   return v;
 }
 
-// AUTO-PUSH: hooks your app's save() to the cloud
+// AUTO-PUSH: hooks your app's save() so every entry goes to the cloud
 const hookInterval = setInterval(() => {
   if (typeof window.save === 'function' && !window.save._hooked) {
     clearInterval(hookInterval);
@@ -174,13 +186,14 @@ const hookInterval = setInterval(() => {
   }
 }, 100);
 
-// AUTO-PULL: live update from ANY browser/device
+// AUTO-PULL: live update when ANY browser/device changes data
 dbRef.on('value', (snap) => {
   const cloud = snap.val();
   const localRaw = safeStorage.get('ghrt-data-v4');
   let local = null;
   try { local = JSON.parse(localRaw); } catch(e) {}
 
+  // First device ever seeds the cloud
   if (cloud === null && localRaw) {
     try { dbRef.set(JSON.parse(localRaw)); } catch(e) {}
     return;
@@ -204,8 +217,7 @@ window.addEventListener('load', () => {
   }
 });
 </script>
-
-<script>
+<!-- END OF STATUS BANNER -->
 <!-- END OF STATUS BANNER -->
       <header class="topbar">
         <div class="admin">
