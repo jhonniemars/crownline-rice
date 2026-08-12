@@ -144,6 +144,52 @@
         document.getElementById("current-time").innerText = now.toLocaleString();
     });
 </script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyA8wO7LkcBALxfCB2LP550JVmdMb7kuSwk",
+  databaseURL: "https://crownline-rice-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "crownline-rice",
+  appId: "1:277225018145:web:6792bef1dc04a8e9bde460"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* Must match the keys your app uses in localStorage
+   (Ctrl+F search for localStorage.getItem to confirm the names) */
+const SYNC_KEYS = ["sales", "customers", "installments"];
+
+// Save locally + push to cloud at the same time
+function syncSave(key, data) {
+  syncSave("sales", sales);
+  db.ref("tracker/" + key).set(data);
+}
+
+// Compare data ignoring key order
+function sortKeys(v) {
+  if (Array.isArray(v)) return v.map(sortKeys);
+  if (v && typeof v === "object")
+    return Object.keys(v).sort().reduce((o, k) => ((o[k] = sortKeys(v[k])), o), {});
+  return v;
+}
+
+// LIVE update when ANY device adds/changes data
+SYNC_KEYS.forEach((key) => {
+  db.ref("tracker/" + key).on("value", (snap) => {
+    const cloud = snap.val();
+    if (cloud === null) return;
+    const local = JSON.parse(localStorage.getItem(key) || "null");
+    if (JSON.stringify(sortKeys(cloud)) !== JSON.stringify(sortKeys(local))) {
+      syncSave("sales", sales);
+      location.reload();
+    }
+  });
+});
+</script>
 <!-- END OF STATUS BANNER -->
       <header class="topbar">
         <div class="admin">
