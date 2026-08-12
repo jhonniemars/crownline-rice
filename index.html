@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>" />
   <style>
     :root {
-      --sidebar-bg: #3a271c; --sidebar-text: #f3ead9;
+      --sidebar-bg: #3a271c; --sidebafr-text: #f3ead9;
       --bg: #f6f0e2; --topbar: #e9e2d2; --card: #fbfaf7;
       --green: #2e7d32; --text: #181818; --border: #e3ddcf;
       --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
@@ -132,17 +132,8 @@
     Opened at: <span id="current-time"></span>
 </div>
 
-<script>
-    function detectDeviceType() {
-        const isMobile = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-        return isMobile ? "Mobile 📱" : "PC / Desktop 💻";
-    }
-    
-    window.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("device-type").innerText = detectDeviceType();
-        const now = new Date();
-        document.getElementById("current-time").innerText = now.toLocaleString();
-    });
+</script>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -154,19 +145,15 @@ const firebaseConfig = {
   projectId: "crownline-rice",
   appId: "1:277225018145:web:6792bef1dc04a8e9bde460"
 };
-
-// Initialize safely (prevents errors if loaded twice)
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const dbRef = db.ref('tracker/ghrt-data-v4');
 
-// Safe storage wrapper (prevents crashes in Safari Private / Incognito)
 const safeStorage = {
   get: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} }
 };
 
-// Helper to compare data fairly
 function norm(v) {
   if (Array.isArray(v)) return v.map(norm);
   if (v && typeof v === "object")
@@ -174,40 +161,38 @@ function norm(v) {
   return v;
 }
 
-// 1. AUTO-PUSH: Hijacks your app's native save() to push to the cloud
+// AUTO-PUSH: hooks your app's save() to the cloud
 const hookInterval = setInterval(() => {
   if (typeof window.save === 'function' && !window.save._hooked) {
     clearInterval(hookInterval);
     const originalSave = window.save;
     window.save = function() {
-      originalSave(); // Run your app's normal save
+      originalSave();
       try { dbRef.set({ stockEntries, sales, installments }); } catch(e) {}
     };
     window.save._hooked = true;
   }
 }, 100);
 
-// 2. AUTO-PULL: Listens for changes from ANY browser/device live
+// AUTO-PULL: live update from ANY browser/device
 dbRef.on('value', (snap) => {
   const cloud = snap.val();
   const localRaw = safeStorage.get('ghrt-data-v4');
   let local = null;
   try { local = JSON.parse(localRaw); } catch(e) {}
 
-  // If cloud is empty, this browser is the "First One" -> seed the cloud
   if (cloud === null && localRaw) {
     try { dbRef.set(JSON.parse(localRaw)); } catch(e) {}
     return;
   }
 
-  // If cloud has data and it differs from local, update and reload UI
   if (cloud && JSON.stringify(norm(cloud)) !== JSON.stringify(norm(local))) {
     safeStorage.set('ghrt-data-v4', JSON.stringify(cloud));
     location.reload();
   }
 });
 
-// 3. INITIAL LOAD: If a new browser opens the site with no data, pull from cloud
+// New browser with no data? Download from cloud on first open
 window.addEventListener('load', () => {
   if (!safeStorage.get('ghrt-data-v4')) {
     dbRef.once('value').then((s) => {
@@ -219,8 +204,8 @@ window.addEventListener('load', () => {
   }
 });
 </script>
-      
-</script>
+
+<script>
 <!-- END OF STATUS BANNER -->
       <header class="topbar">
         <div class="admin">
