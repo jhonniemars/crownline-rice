@@ -143,8 +143,6 @@
         const now = new Date();
         document.getElementById("current-time").innerText = now.toLocaleString();
     });
-</script>
-
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -159,10 +157,45 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* Must match the keys your app uses in localStorage
-   (Ctrl+F search for localStorage.getItem to confirm the names) */
-const SYNC_KEYS = ["sales", "customers", "installments"];
+/* Your app saves EVERYTHING under this one key */
+const DATA_KEY = "ghrt-data-v4";
 
+/* Compare data ignoring key order */
+function norm(v) {
+  if (Array.isArray(v)) return v.map(norm);
+  if (v && typeof v === "object")
+    return Object.keys(v).sort().reduce((o, k) => ((o[k] = norm(v[k])), o), {});
+  return v;
+}
+
+/* 1) AUTO-PUSH: every time your app saves locally, push to the cloud */
+const originalSetItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function (key, value) {
+  originalSetItem(key, value);
+  if (key === DATA_KEY) {
+    try { db.ref("tracker/" + DATA_KEY).set(JSON.parse(value)); } catch (e) {}
+  }
+};
+
+/* 2) AUTO-PULL: live update when ANY device changes data */
+db.ref("tracker/" + DATA_KEY).on("value", (snap) => {
+  const cloud = snap.val();
+  const localRaw = localStorage.getItem(DATA_KEY);
+
+  // Cloud empty? The FIRST device to open seeds it (whichever comes first)
+  if (cloud === null) {
+    if (localRaw) db.ref("tracker/" + DATA_KEY).set(JSON.parse(localRaw));
+    return;
+  }
+
+  const local = JSON.parse(localRaw || "null");
+  if (JSON.stringify(norm(cloud)) !== JSON.stringify(norm(local))) {
+    originalSetItem(DATA_KEY, JSON.stringify(cloud));
+    location.reload(); // show the new entries & dates immediately
+  }
+});
+</script>
+      
 // Save locally + push to cloud at the same time
 function syncSave(key, data) {
   syncSave("sales", sales);
