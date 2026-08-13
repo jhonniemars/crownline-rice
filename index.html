@@ -927,9 +927,8 @@ window.addEventListener('load', () => {
     // ---------- Init ----------
     load();
     renderAll();
-    
-</script>
-  // ========== PURCHASE CHARGE ADD-ON ==========
+<script>
+// ========== PURCHASE CHARGE ADD-ON ==========
 (function () {
   const CHARGE_KEY = 'purchaseCharge';
   const nameOf = e => e && (e.name || e.rice || e.item || e.riceName || '');
@@ -956,7 +955,6 @@ window.addEventListener('load', () => {
     const rows = table.querySelectorAll('tbody tr');
     if (!rows.length) return;
 
-    // detect if newest entries appear at the top
     let reversed = false;
     const firstName = rows[0].cells[0] ? rows[0].cells[0].textContent.trim() : '';
     if (arr.length > 1 && firstName && nameOf(arr[0]) && firstName !== nameOf(arr[0]) && firstName === nameOf(arr[arr.length - 1])) reversed = true;
@@ -976,14 +974,12 @@ window.addEventListener('load', () => {
     if (!saveBtn || saveBtn._pcDone) return true;
     saveBtn._pcDone = true;
 
-    // The "Purchase Charge" toggle button
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = 'Purchase Charge';
     btn.style.cssText = 'margin-left:10px; padding:12px 18px; border-radius:8px; border:2px solid #c9a24b; background:#f6f0e2; color:#5a4632; cursor:pointer; font-weight:bold;';
     saveBtn.insertAdjacentElement('afterend', btn);
 
-    // Hidden charge input
     const wrap = document.createElement('div');
     wrap.id = 'pcWrap';
     wrap.style.cssText = 'display:none; margin-top:14px;';
@@ -993,24 +989,21 @@ window.addEventListener('load', () => {
 
     btn.onclick = () => { wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none'; };
 
-    // Capture entry count BEFORE the app's own save handler runs
     saveBtn.addEventListener('click', () => { window._pcBefore = (window.stockEntries || []).length; }, true);
 
-    // AFTER the app saves, attach the charge to the newest entry
     saveBtn.addEventListener('click', () => {
       const input = document.getElementById('pcInput');
       const val = parseFloat(input && input.value);
       const arr = window.stockEntries || [];
       if (val > 0 && arr.length > (window._pcBefore || 0)) {
         arr[arr.length - 1][CHARGE_KEY] = val;
-        if (typeof window.save === 'function') window.save(); // persists + syncs to cloud
+        if (typeof window.save === 'function') window.save();
       }
       if (input) input.value = '';
       wrap.style.display = 'none';
       setTimeout(patchTable, 300);
     });
 
-    // Wrap renderAll so the column survives re-renders
     if (typeof window.renderAll === 'function' && !window.renderAll._pcWrapped) {
       const orig = window.renderAll;
       window.renderAll = function () { const r = orig.apply(this, arguments); setTimeout(patchTable, 0); return r; };
@@ -1023,6 +1016,6 @@ window.addEventListener('load', () => {
 
   const wait = setInterval(() => { if (setup()) clearInterval(wait); }, 300);
 })();
-  </script>
+</script>
 </body>
 </html>
