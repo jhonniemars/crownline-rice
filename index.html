@@ -120,6 +120,37 @@
   </style>
 </head>
 <body>
+  <!-- AUTHORIZATION GATE -->
+<div id="auth-gate" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:Arial, sans-serif;">
+  <h2 style="margin-bottom:20px;">🔒 Crownline Rice - Staff Login</h2>
+  <input type="password" id="auth-password" placeholder="Enter Access Code" 
+         style="padding:12px; font-size:16px; width:250px; text-align:center; border-radius:5px; border:none;"
+         onkeypress="if(event.key === 'Enter') checkAuth()">
+  <button onclick="checkAuth()" style="padding:12px 24px; margin-top:15px; cursor:pointer; background:#28a745; color:white; border:none; border-radius:5px; font-size:16px;">Unlock</button>
+  <p id="auth-error" style="color:#ff6b6b; margin-top:15px; display:none;">Incorrect password. Access Denied.</p>
+</div>
+
+<script>
+  function checkAuth() {
+    // CHANGE THIS PASSWORD TO WHATEVER YOU WANT YOUR STAFF TO USE
+    const correctPassword = "crownlinerice"; 
+    const input = document.getElementById('auth-password').value;
+    
+    if (input === correctPassword) {
+      sessionStorage.setItem('isAuthorized', 'true');
+      document.getElementById('auth-gate').style.display = 'none';
+    } else {
+      document.getElementById('auth-error').style.display = 'block';
+      document.getElementById('auth-password').value = '';
+    }
+  }
+
+  // Check if already logged in on page load
+  if (sessionStorage.getItem('isAuthorized') === 'true') {
+    document.getElementById('auth-gate').style.display = 'none';
+  }
+</script>
+<!-- END AUTHORIZATION GATE -->
   <div class="app">
 
     <aside class="sidebar">
